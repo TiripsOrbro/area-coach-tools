@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Taco Bell Dashboard</title>
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: #1a1a1a;
+      color: #f5f5f5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+    }
+    .wrap {
+      text-align: center;
+      padding: 20px 28px 24px;
+      max-width: 360px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    #status {
+      margin: 0 0 14px;
+      font-size: 13px;
+      color: #c8c8c8;
+      line-height: 1.4;
+      min-height: 2.6em;
+    }
+    #progressWrap {
+      margin-bottom: 4px;
+    }
+    #progressWrap.hidden {
+      visibility: hidden;
+      height: 0;
+      margin: 0;
+      overflow: hidden;
+    }
+    .bar {
+      height: 8px;
+      background: #333;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    #fill {
+      height: 100%;
+      width: 0%;
+      background: #e87722;
+      border-radius: 4px;
+      transition: width 0.2s ease;
+    }
+    #pct {
+      margin-top: 8px;
+      font-size: 11px;
+      color: #888;
+      min-height: 1.2em;
+    }
+    #closeBtn {
+      display: none;
+      margin-top: 16px;
+      padding: 8px 28px;
+      font-size: 13px;
+      font-family: inherit;
+      font-weight: 600;
+      color: #1a1a1a;
+      background: #e87722;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    #closeBtn:hover {
+      background: #f08a38;
+    }
+    #closeBtn:focus {
+      outline: 2px solid #f5f5f5;
+      outline-offset: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1 id="headline">Taco Bell Dashboard</h1>
+    <p id="status">Checking for updates…</p>
+    <div id="progressWrap">
+      <div class="bar"><div id="fill"></div></div>
+      <div id="pct"></div>
+    </div>
+    <button type="button" id="closeBtn">Close</button>
+  </div>
+  <script>
+    window.setUpdateView = (opts) => {
+      const o = opts || {};
+      const headline = document.getElementById('headline');
+      const status = document.getElementById('status');
+      const progressWrap = document.getElementById('progressWrap');
+      const fill = document.getElementById('fill');
+      const pct = document.getElementById('pct');
+      const closeBtn = document.getElementById('closeBtn');
+
+      if (o.headline) headline.textContent = o.headline;
+      if (o.status) status.textContent = o.status;
+
+      if (o.showBar === false) {
+        progressWrap.classList.add('hidden');
+      } else if (o.showBar === true) {
+        progressWrap.classList.remove('hidden');
+      }
+
+      if (typeof o.percent === 'number' && Number.isFinite(o.percent)) {
+        const p = Math.max(0, Math.min(100, o.percent));
+        fill.style.width = p + '%';
+        pct.textContent = Math.round(p) + '%';
+      } else if (o.percent === null) {
+        fill.style.width = '0%';
+        pct.textContent = '';
+      }
+
+      if (o.showClose) {
+        closeBtn.style.display = 'inline-block';
+      } else if (o.showClose === false) {
+        closeBtn.style.display = 'none';
+      }
+    };
+
+    // Back-compat for launch-gate code paths.
+    window.setUpdateStatus = (text, percent) => {
+      window.setUpdateView({
+        status: text,
+        showBar: typeof percent === 'number',
+        percent: typeof percent === 'number' ? percent : null,
+      });
+    };
+  </script>
+</body>
+</html>

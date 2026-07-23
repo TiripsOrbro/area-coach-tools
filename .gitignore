@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+desktop/node_modules/
+
+# Secrets / local env
+.env
+.env.local
+desktop/users.seed.json
+**/coach-session.json
+
+# Electron / build output
+desktop/dist/
+desktop/dist-*/
+*.exe
+*.blockmap
+*.dmg
+*.AppImage
+
+# Runtime / generated data
+dashboard/data/
+forecast/data/
+stores/data/
+data/prep-guides/
+*.log
+npm-debug.log*
+.pm2/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+Desktop.ini
+.vscode/
+.idea/
+*.swp
+
+# Probe / temp
+**/probe-screenshots/
+tmp/
+temp/

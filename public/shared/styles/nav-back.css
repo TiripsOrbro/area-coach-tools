@@ -1,0 +1,105 @@
+.nav-back-host {
+    position: fixed;
+    top: max(14px, env(safe-area-inset-top));
+    left: max(14px, env(safe-area-inset-left));
+    z-index: 10050;
+    pointer-events: none;
+}
+
+.nav-back-host--floating {
+    display: block;
+    position: fixed;
+    top: max(14px, env(safe-area-inset-top));
+    left: max(14px, env(safe-area-inset-left));
+    right: auto;
+    bottom: auto;
+    z-index: 10050;
+    pointer-events: none;
+}
+
+.nav-back-host--embedded {
+    position: static;
+    inset: auto;
+    top: auto;
+    left: auto;
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+}
+
+.nav-back-bubble {
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
+    margin: 0;
+    border: none;
+    border-radius: 50%;
+    box-sizing: border-box;
+    background: var(--white, #fff);
+    color: var(--charcoal, #231e1f);
+    box-shadow:
+        0 2px 8px color-mix(in srgb, var(--charcoal, #231e1f) 18%, transparent),
+        0 1px 2px color-mix(in srgb, var(--charcoal, #231e1f) 10%, transparent);
+    cursor: pointer;
+    transition:
+        transform 0.15s ease,
+        box-shadow 0.15s ease,
+        background 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    position: relative;
+    z-index: 1;
+}
+
+.nav-back-bubble:hover {
+    transform: translateY(-1px);
+    box-shadow:
+        0 4px 14px color-mix(in srgb, var(--charcoal, #231e1f) 22%, transparent),
+        0 2px 4px color-mix(in srgb, var(--charcoal, #231e1f) 12%, transparent);
+}
+
+.nav-back-bubble:active {
+    transform: scale(0.96);
+}
+
+.nav-back-bubble:focus-visible {
+    outline: 2px solid var(--tb-purple-light, #7a3eb1);
+    outline-offset: 2px;
+}
+
+.nav-back-icon {
+    display: block;
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    min-height: 22px;
+    margin-left: -2px;
+    flex-shrink: 0;
+}
+
+.login-body .nav-back-bubble {
+    background: color-mix(in srgb, var(--login-surface-raised, #231e1f) 92%, white);
+    color: var(--login-text, #f5f5f5);
+    box-shadow:
+        0 2px 10px rgba(0, 0, 0, 0.45),
+        0 0 0 1px color-mix(in srgb, var(--login-border, #3d3344) 80%, transparent);
+}
+
+.login-body .nav-back-bubble:hover {
+    background: color-mix(in srgb, var(--tb-purple-light, #7a3eb1) 28%, var(--login-surface-raised, #231e1f));
+}
+
+.login-body .nav-back-bubble:focus-visible {
+    outline-color: var(--tb-purple-light, #7a3eb1);
+}
+
+/* Legacy class - hide if any old markup remains */
+.nav-back-btn {
+    display: none;
+}

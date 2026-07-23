@@ -1,0 +1,78 @@
+# Master store list for the dashboard.
+# Controls WHICH stores are scraped/served AND their trading hours.
+# Add a line to add a store; remove a line to drop it. Comment out (#) to keep for later.
+#
+# Format (pipe-delimited):
+#   store# | name | openHour | closeHour | area | timeZone
+#   store# | name | area | timeZone                     (for per-day schedules)
+#
+# Hours from tacobell.com.au (Jun 2026). closeHour 22=10pm, 23=11pm, 24=midnight.
+# Lines starting with # and blank lines are ignored.
+
+# --- QLD ---
+#3751 | Annerley      | 10 | 22 | QLD-1 | Australia/Brisbane
+#3753 | North Lakes   | QLD-1 | Australia/Brisbane
+#    Monday           | 10 | 22
+#    Tuesday          | 10 | 22
+#    Wednesday        | 10 | 22
+#    Thursday         | 10 | 23
+#    Friday           | 10 | 23
+#    Saturday         | 10 | 23
+#    Sunday           | 10 | 22
+#3759 | East Ipswich  | 10 | 22 | QLD-1 | Australia/Brisbane
+#3761 | Morayfield    | 10 | 22 | QLD-1 | Australia/Brisbane
+#3756 | Logan Central | 10 | 22 | QLD-1 | Australia/Brisbane
+#3758 | Beenleigh     | 10 | 22 | QLD-1 | Australia/Brisbane
+#3764 | Coorparoo     | 10 | 22 | QLD-1 | Australia/Brisbane
+#3765 | Coomera South | QLD-1 | Australia/Brisbane
+#    Sunday           | 10 | 22
+#    Monday           | 10 | 22
+#    Tuesday          | 10 | 22
+#    Wednesday        | 10 | 22
+#    Thursday         | 10 | 23
+#    Friday           | 10 | 23
+#    Saturday         | 10 | 23
+#
+# --- VIC ---
+3801 | South Yarra      | VIC-1 | Australia/Melbourne
+    Sunday              | 11 | 22
+    Monday              | 11 | 22
+    Tuesday             | 11 | 22
+    Wednesday           | 11 | 22
+    Thursday            | 11 | 22
+    Friday              | 11 | 24
+    Saturday            | 11 | 24
+3802 | Hawthorn | 10 | 22 | VIC-1 | Australia/Melbourne
+3803 | Roxburgh Park    | VIC-1 | Australia/Melbourne
+    Sunday              | 10 | 23
+    Monday              | 10 | 23
+    Tuesday             | 10 | 23
+    Wednesday           | 10 | 23
+    Thursday            | 10 | 23
+    Friday              | 10 | 24
+    Saturday            | 10 | 24
+3804 | Altona North     | 10 | 23 | VIC-1 | Australia/Melbourne
+3809 | Hoppers Crossing | 10 | 23 | VIC-1 | Australia/Melbourne
+3806 | Dandenong South  | 10 | 23 | VIC-1 | Australia/Melbourne
+3808 | Berwick South    | 10 | 23 | VIC-1 | Australia/Melbourne
+3811 | Chirnside Park   | 10 | 22 | VIC-1 | Australia/Melbourne
+# --- WA ---
+3901 | Midland          | WA-1 | Australia/Perth
+    Monday              | 10 | 22
+    Tuesday             | 10 | 22
+    Wednesday           | 10 | 22
+    Thursday            | 10 | 23
+    Friday              | 10 | 23
+    Saturday            | 10 | 23
+    Sunday              | 10 | 22
+3902 | Ellenbrook North | WA-1 | Australia/Perth
+    Sunday    | 10 | 22
+    Monday    | 10 | 22
+    Tuesday   | 10 | 22
+    Wednesday | 10 | 22
+    Thursday  | 10 | 22
+    Friday    | 10 | 23
+    Saturday  | 10 | 22
+3903 | Canning Vale     | 10 | 23 | WA-1 | Australia/Perth
+3904 | Butler           | 10 | 22 | WA-1 | Australia/Perth
+

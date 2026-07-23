@@ -1,0 +1,58 @@
+.brand-mark {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.brand-mark-ring--outer,
+.brand-mark-ring--inner {
+    transform-box: fill-box;
+    transform-origin: 256px 256px;
+}
+
+.brand-mark-ring--outer {
+    animation: brand-mark-ring-pulse 2.8s ease-in-out infinite;
+}
+
+.brand-mark-ring--inner {
+    animation: brand-mark-ring-pulse 2.8s ease-in-out 0.35s infinite;
+}
+
+.brand-mark-pulse {
+    stroke-dasharray: 520;
+    stroke-dashoffset: 520;
+}
+
+@keyframes brand-mark-ring-pulse {
+    0%,
+    100% {
+        opacity: 0.38;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.62;
+        transform: scale(1.03);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .brand-mark-ring--outer,
+    .brand-mark-ring--inner,
+    .brand-mark-pulse {
+        animation: none !important;
+        stroke-dashoffset: 0 !important;
+        opacity: 1 !important;
+        transform: none !important;
+    }
+
+    .brand-mark-dot--lead,
+    .brand-mark-dot--trail {
+        opacity: 1 !important;
+    }
+
+    .brand-mark-dot-motion,
+    .brand-mark-dot-opacity,
+    .brand-mark-cycle-anim {
+        display: none;
+    }
+}

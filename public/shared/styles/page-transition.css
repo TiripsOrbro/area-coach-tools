@@ -1,0 +1,31 @@
+/* Cross-page fade: store picker → store / area dashboard */
+
+html.page-nav-enter-pending body {
+    opacity: 0;
+}
+
+body.page-nav-fade-out {
+    opacity: 0;
+    transition: opacity 0.42s ease;
+    pointer-events: none;
+}
+
+body.page-nav-fade-in {
+    opacity: 0;
+    transition: opacity 0.55s ease;
+}
+
+body.page-nav-fade-in.page-nav-fade-in--visible {
+    opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body.page-nav-fade-out,
+    body.page-nav-fade-in {
+        transition: none;
+    }
+
+    html.page-nav-enter-pending body {
+        opacity: 1;
+    }
+}

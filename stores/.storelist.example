@@ -1,0 +1,77 @@
+# Master store list for the dashboard.
+# Copy this file to `.storelist` and edit it. The `.storelist` file is the single
+# source of truth: it controls WHICH stores are scraped/served AND their trading hours.
+# Add a line to add a store; remove a line to drop it. Comment out (#) to keep for later.
+#
+# Format (pipe-delimited):
+#   store# | name | openHour | closeHour | area | timeZone
+#   store# | name | area | timeZone                     (for per-day schedules)
+#   store# | name                                        (defaults: Area 22 + dashboard TZ)
+#   - openHour  = first trading hour shown (24h clock)
+#   - closeHour = closing hour (24h clock); the last column shown is closeHour - 1
+#   - area      = used to group stores in the picker and area dashboards (e.g. Area 22)
+#   - timeZone  = IANA name (e.g. Australia/Melbourne, Australia/Perth)
+#   - midnight close may be written as 24 or 0; hours past midnight as 25, 26 (1AM = 25)
+# Lines starting with # and blank lines are ignored.
+#
+# Different hours on different days:
+#   Leave the hours off the store line, then add one line per weekday beneath it.
+#   Day names: Monday..Sunday (or Mon/Tue/Wed/Thu/Fri/Sat/Sun). Indenting is optional.
+#   Any weekday you don't list falls back to the store's plain line (if it has hours)
+#   or the 10-22 default. Hours are resolved for "today" in Australia/Melbourne.
+
+# --- Area 1 (QLD) ---
+# 3751 | Annerley    | 10 | 22 | Area 1 | Australia/Brisbane
+# 3753 | North Lakes | Area 1 | Australia/Brisbane
+#     Monday    | 10 | 22
+#     Tuesday   | 10 | 22
+#     Wednesday | 10 | 22
+#     Thursday  | 10 | 23
+#     Friday    | 10 | 23
+#     Saturday  | 10 | 23
+#     Sunday    | 10 | 22
+# 3759 | East Ipswich | 10 | 22 | Area 1 | Australia/Brisbane
+# 3761 | Morayfield   | 10 | 22 | Area 1 | Australia/Brisbane
+
+# --- Area 2 (QLD) ---
+# 3756 | Logan Central | 10 | 22 | Area 2 | Australia/Brisbane
+# 3758 | Beenleigh     | 10 | 22 | Area 2 | Australia/Brisbane
+# 3764 | Coorparoo     | 10 | 22 | Area 2 | Australia/Brisbane
+# 3765 | Coomera South | Area 2 | Australia/Brisbane
+#     Sunday    | 10 | 22
+#     Monday    | 10 | 22
+#     Tuesday   | 10 | 22
+#     Wednesday | 10 | 22
+#     Thursday  | 10 | 23
+#     Friday    | 10 | 23
+#     Saturday  | 10 | 23
+
+# --- Area 21 (VIC) ---
+# 3801 | South Yarra | Area 21 | Australia/Melbourne
+#     Sunday    | 11 | 22
+#     Monday    | 11 | 22
+#     Tuesday   | 11 | 22
+#     Wednesday | 11 | 22
+#     Thursday  | 11 | 22
+#     Friday    | 11 | 24
+#     Saturday  | 11 | 24
+# 3802 | Hawthorn      | 11 | 22 | Area 21 | Australia/Melbourne
+# 3803 | Roxburgh Park | Area 21 | Australia/Melbourne
+#     Sunday    | 10 | 23
+#     Monday    | 10 | 23
+#     Tuesday   | 10 | 23
+#     Wednesday | 10 | 23
+#     Thursday  | 10 | 23
+#     Friday    | 10 | 24
+#     Saturday  | 10 | 24
+# 3804 | Altona North     | 10 | 23 | Area 21 | Australia/Melbourne
+# 3809 | Hoppers Crossing | 10 | 23 | Area 21 | Australia/Melbourne
+
+# --- Area 22 (VIC + WA) — active examples ---
+3806 | Dandenong South  | 10 | 23 | Area 22 | Australia/Melbourne
+3808 | Berwick South    | 10 | 23 | Area 22 | Australia/Melbourne
+3811 | Chirnside Park   | 10 | 22 | Area 22 | Australia/Melbourne
+3901 | Midland          | WA-1 | Australia/Perth
+3902 | Ellenbrook North | WA-1 | Australia/Perth
+3903 | Canning Vale     | 10 | 23 | WA-1 | Australia/Perth
+3904 | Butler           | 10 | 22 | WA-1 | Australia/Perth

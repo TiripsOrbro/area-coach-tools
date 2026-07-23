@@ -1,0 +1,31 @@
+{
+  "areas": [
+    {
+      "id": "VIC-1",
+      "slug": "vic-1",
+      "label": "VIC",
+      "timeZone": "Australia/Melbourne",
+      "order": 1
+    },
+    {
+      "id": "WA-1",
+      "slug": "wa-1",
+      "label": "WA",
+      "timeZone": "Australia/Perth",
+      "order": 2
+    },
+    {
+      "id": "QLD-1",
+      "slug": "qld-1",
+      "label": "QLD",
+      "timeZone": "Australia/Brisbane",
+      "order": 3
+    }
+  ],
+  "legacyAreaMap": {
+    "Area 1": "QLD-1",
+    "Area 2": "QLD-1",
+    "Area 21": "VIC-1",
+    "Area 22": "VIC-1"
+  }
+}

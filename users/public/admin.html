@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#7a3eb1">
+    <title>Settings</title>
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/styles/fonts.css">
+    <link rel="stylesheet" href="/styles/app-tabs.css">
+    <link rel="stylesheet" href="/styles/brand-mark.css">
+    <link rel="stylesheet" href="/styles/design-tokens.css">
+    <link rel="stylesheet" href="/styles/dashboard.css">
+    <link rel="stylesheet" href="/styles/mic.css">
+    <link rel="stylesheet" href="/styles/nav-back.css">
+    <link rel="stylesheet" href="/styles/admin-menu.css">
+    <link rel="stylesheet" href="/styles/account-modal.css">
+    <link rel="stylesheet" href="/styles/requests.css">
+    <link rel="stylesheet" href="/styles/bug-reports.css">
+</head>
+<body class="admin-settings-page">
+    <script src="/scripts/brand-mark.js"></script>
+    <div class="admin-settings-shell">
+        <header class="admin-settings-header">
+            <div id="nav-back-host" class="admin-settings-header__back"></div>
+            <h1 class="admin-settings-title">Settings</h1>
+            <button type="button" id="admin-settings-nav-toggle" class="admin-settings-nav-toggle admin-settings-header__menu" aria-expanded="false" aria-controls="admin-settings-nav" aria-label="Open menu"><svg class="admin-settings-nav-toggle-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M4 7h16v2H4V7zm0 5h16v2H4v-2zm0 5h16v2H4v-2z"/></svg></button>
+        </header>
+        <div class="admin-settings-body">
+            <div id="admin-settings-nav-backdrop" class="admin-settings-nav-backdrop" hidden aria-hidden="true"></div>
+            <div class="admin-settings-sidebar-wrap">
+                <nav id="admin-settings-nav" class="admin-settings-sidebar" role="navigation" aria-label="Settings sections"></nav>
+                <div class="admin-settings-sidebar-footer">
+                    <button type="button" id="admin-settings-sign-out" class="admin-settings-sign-out">Sign out</button>
+                </div>
+            </div>
+            <main class="admin-settings-main">
+                <div id="admin-settings-content" class="admin-settings-content" role="main"></div>
+            </main>
+        </div>
+    </div>
+    <script src="/scripts/app-paths.js"></script>
+    <script src="/scripts/page-transition.js"></script>
+    <script src="/scripts/nav-back.js"></script>
+    <script src="/scripts/dashboard-meta.js"></script>
+    <script src="/scripts/live-sync.js"></script>
+    <script src="/scripts/audit-preferences.js"></script>
+    <script src="/scripts/account-modal.js"></script>
+    <script src="/scripts/area-display.js"></script>
+    <script src="/scripts/admin-scope-picker.js"></script>
+    <script src="/scripts/admin-store-view.js"></script>
+    <script src="/scripts/mic-settings.js"></script>
+    <script src="/scripts/create-account-form.js"></script>
+    <script src="/scripts/admin-accounts.js"></script>
+    <script src="/scripts/admin-forecast.js"></script>
+    <script src="/scripts/admin-build-to.js"></script>
+    <script src="/scripts/admin-store-hours.js"></script>
+    <script src="/scripts/admin-five-am-reports.js"></script>
+    <script src="/scripts/admin-report-subscriptions.js"></script>
+    <script src="/scripts/admin-live-logs.js"></script>
+    <script src="/scripts/admin-store-logins.js"></script>
+    <script src="/scripts/admin-smg-nsf.js"></script>
+    <script src="/scripts/requests.js"></script>
+    <script src="/scripts/bug-reports.js"></script>
+    <script src="/scripts/admin-page.js"></script>
+</body>
+</html>

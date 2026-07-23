@@ -1,0 +1,77 @@
+.loading-dots {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: calc(14px * var(--dashboard-scale, 1));
+}
+
+.loading-dots__dot {
+    display: block;
+    border-radius: 50%;
+    background: var(--tb-purple-light, #7a3eb1);
+    transform: scale(0.55);
+    animation: loading-dots-pulse 1.15s ease-in-out infinite;
+}
+
+.loading-dots--sm .loading-dots__dot {
+    width: calc(8px * var(--dashboard-scale, 1));
+    height: calc(8px * var(--dashboard-scale, 1));
+}
+
+.loading-dots--md .loading-dots__dot {
+    width: calc(14px * var(--dashboard-scale, 1));
+    height: calc(14px * var(--dashboard-scale, 1));
+}
+
+.loading-dots--lg .loading-dots__dot {
+    width: calc(22px * var(--dashboard-scale, 1));
+    height: calc(22px * var(--dashboard-scale, 1));
+}
+
+.loading-dots__dot:nth-child(1) {
+    animation-delay: 0s;
+}
+
+.loading-dots__dot:nth-child(2) {
+    animation-delay: 0.18s;
+}
+
+.loading-dots__dot:nth-child(3) {
+    animation-delay: 0.36s;
+}
+
+@keyframes loading-dots-pulse {
+    0%,
+    70%,
+    100% {
+        transform: scale(0.55);
+        opacity: 0.55;
+    }
+
+    35% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.dashboard-grid-loading,
+.mic-grid-loading-solo {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: min(56vh, calc(420px * var(--dashboard-scale, 1)));
+    padding: calc(32px * var(--dashboard-scale, 1));
+    box-sizing: border-box;
+}
+
+.mic-grid-loading-solo {
+    min-height: min(48vh, calc(360px * var(--dashboard-scale, 1)));
+}
+
+.mic-grid-loading-overlay--solo {
+    position: relative;
+    inset: auto;
+    grid-column: 1 / -1;
+    min-height: min(48vh, calc(360px * var(--dashboard-scale, 1)));
+}

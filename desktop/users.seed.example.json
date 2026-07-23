@@ -1,0 +1,10 @@
+{
+  "ash": {
+    "mmx": { "username": "REPLACE_ASH_MMX_USER", "password": "REPLACE_ASH_MMX_PASS" },
+    "lifelenz": { "email": "ash@example.com", "password": "REPLACE_ASH_LIFELENZ_PASS" }
+  },
+  "tom": {
+    "mmx": { "username": "REPLACE_TOM_MMX_USER", "password": "REPLACE_TOM_MMX_PASS" },
+    "lifelenz": { "email": "tom@example.com", "password": "REPLACE_TOM_LIFELENZ_PASS" }
+  }
+}

@@ -1,0 +1,285 @@
+.account-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: color-mix(in srgb, var(--charcoal) 55%, transparent);
+    display: grid;
+    place-items: center;
+    padding: 1rem;
+    z-index: 100;
+}
+
+.account-modal-backdrop[hidden] {
+    display: none !important;
+}
+
+.account-modal {
+    width: min(420px, 100%);
+    background: var(--white);
+    border: 2px solid var(--charcoal);
+    padding: 1rem 1.1rem 1.2rem;
+    color: var(--charcoal);
+}
+
+.account-modal h2 {
+    margin: 0 0 0.85rem;
+    font-size: var(--font-size-3);
+}
+
+.account-modal label {
+    display: grid;
+    gap: 0.35rem;
+    margin-bottom: 0.75rem;
+    font-size: var(--font-size-5);
+    font-weight: var(--font-weight-ui-label);
+}
+
+.account-modal input {
+    font: inherit;
+    padding: 0.55rem 0.65rem;
+    border: 2px solid var(--charcoal);
+}
+
+.account-modal textarea {
+    font: inherit;
+    padding: 0.55rem 0.65rem;
+    border: 2px solid var(--charcoal);
+    resize: vertical;
+    min-height: 6rem;
+}
+
+.account-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.account-modal-actions button {
+    font: inherit;
+    padding: 0.5rem 0.85rem;
+    border: 2px solid var(--charcoal);
+    cursor: pointer;
+}
+
+.account-modal-actions .account-modal-primary {
+    background: var(--tb-purple-light);
+    color: var(--white);
+    border-color: var(--charcoal);
+}
+
+.account-modal-error {
+    color: #9b1c1c;
+    font-size: var(--font-size-5);
+    min-height: 1.2em;
+    margin: 0.25rem 0 0;
+}
+
+.dashboard-account-host {
+    align-self: center;
+}
+
+.dashboard-account-host .mic-account-btn {
+    border: var(--cell-border) var(--charcoal);
+    background: var(--white);
+    color: var(--charcoal);
+    font: inherit;
+    font-weight: var(--font-weight-ui-label);
+    padding: 0.35rem 0.75rem;
+    cursor: pointer;
+}
+
+.account-menu-panel {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 0.35rem);
+    min-width: 11rem;
+    background: var(--white);
+    border: 2px solid var(--charcoal);
+    z-index: 20;
+}
+
+.account-menu-panel[hidden] {
+    display: none !important;
+}
+
+.account-menu-panel button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    border: 0;
+    background: transparent;
+    font: inherit;
+    padding: 0.65rem 0.85rem;
+    cursor: pointer;
+}
+
+.account-menu-panel button:hover {
+    background: color-mix(in srgb, var(--tb-purple-light) 12%, white);
+}
+
+.account-modal--wide {
+    width: min(480px, 100%);
+}
+
+.account-modal-store-pick {
+    display: grid;
+    gap: 0.35rem;
+    margin-bottom: 0.85rem;
+    font-size: var(--font-size-5);
+    font-weight: var(--font-weight-ui-label);
+}
+
+.account-modal-store-pick select {
+    font: inherit;
+    padding: 0.55rem 0.65rem;
+    border: 2px solid var(--charcoal);
+}
+
+.account-accounts-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: min(50vh, 320px);
+    overflow-y: auto;
+    border: 2px solid color-mix(in srgb, var(--charcoal) 18%, white);
+}
+
+.account-accounts-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.65rem 0.75rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--charcoal) 12%, white);
+}
+
+.account-accounts-list li:last-child {
+    border-bottom: none;
+}
+
+.account-accounts-nickname {
+    font-size: var(--font-size-4);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.25;
+}
+
+.account-accounts-username {
+    display: block;
+    font-size: var(--font-size-5);
+    color: color-mix(in srgb, var(--charcoal) 58%, white);
+    font-weight: var(--font-weight-normal);
+}
+
+.account-accounts-empty {
+    margin: 0;
+    padding: 1rem 0.75rem;
+    text-align: center;
+    color: color-mix(in srgb, var(--charcoal) 62%, white);
+    font-size: var(--font-size-5);
+}
+
+.account-accounts-delete {
+    flex-shrink: 0;
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    border: 2px solid #9b1c1c;
+    background: color-mix(in srgb, #9b1c1c 8%, white);
+    color: #9b1c1c;
+    border-radius: 6px;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+}
+
+.account-accounts-delete:hover,
+.account-accounts-delete:focus-visible {
+    background: #9b1c1c;
+    color: var(--white);
+    outline: none;
+}
+
+.account-accounts-delete svg {
+    width: 1.1rem;
+    height: 1.1rem;
+    display: block;
+}
+
+.admin-store-picker {
+    position: fixed;
+    inset: 0;
+    background: color-mix(in srgb, var(--charcoal) 55%, transparent);
+    display: grid;
+    place-items: center;
+    padding: 1rem;
+    z-index: 100;
+}
+
+.admin-store-picker[hidden] {
+    display: none !important;
+}
+
+.admin-store-picker-panel {
+    width: min(520px, calc(100% - 2rem));
+    max-height: min(70vh, 640px);
+    overflow: auto;
+    background: var(--white);
+    border: 2px solid var(--charcoal);
+    padding: 1rem;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.admin-store-picker-panel h2 {
+    margin: 0;
+    font-size: var(--font-size-3);
+}
+
+.admin-store-picker-hint {
+    margin: 0;
+    font-size: var(--font-size-4);
+    color: color-mix(in srgb, var(--charcoal) 70%, white);
+}
+
+.admin-store-picker-hint[hidden] {
+    display: none;
+}
+
+.admin-store-picker .mic-item-list {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.admin-store-picker .mic-item-option {
+    text-align: left;
+    border: 2px solid var(--charcoal);
+    background: var(--white);
+    padding: 0.75rem;
+    font: inherit;
+    cursor: pointer;
+}
+
+.admin-store-picker .mic-item-option:hover,
+.admin-store-picker .mic-item-option:focus-visible {
+    background: color-mix(in srgb, var(--tb-purple-light, #9b63d6) 10%, white);
+}
+
+.admin-store-picker .mic-item-option-points {
+    display: block;
+    font-size: var(--font-size-5);
+    color: color-mix(in srgb, var(--charcoal) 65%, white);
+    margin-top: 0.2rem;
+}
+
+.admin-store-picker-cancel {
+    align-self: center;
+    border: 2px solid var(--charcoal);
+    background: var(--white);
+    color: var(--charcoal);
+    font: inherit;
+    font-weight: var(--font-weight-semibold);
+    padding: 0.55rem 1rem;
+    cursor: pointer;
+}

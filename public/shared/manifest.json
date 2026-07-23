@@ -1,0 +1,19 @@
+{
+  "name": "TBA Sales Dashboard",
+  "short_name": "TBADash",
+  "description": "Live Taco Bell sales dashboards by store",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#231e1f",
+  "theme_color": "#7a3eb1",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

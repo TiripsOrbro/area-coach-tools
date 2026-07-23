@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Live Dashboard setup</title>
+  <style>
+    :root {
+      --bg: #1a1d23;
+      --card: #242830;
+      --text: #f3f4f6;
+      --muted: #9ca3af;
+      --accent: #7c3aed;
+      --accent2: #a78bfa;
+      --border: #3f4450;
+      --ok: #34d399;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; overflow: hidden; }
+    body {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: radial-gradient(1200px 600px at 10% -10%, #3b0764 0%, var(--bg) 55%);
+      color: var(--text);
+      padding: 18px 20px 16px;
+    }
+    h1 { font-size: 1.35rem; margin: 0 0 4px; }
+    p.lead { color: var(--muted); margin: 0 0 14px; line-height: 1.35; font-size: 0.92rem; }
+    .modes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+    .mode {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      cursor: pointer;
+      background: #12151a;
+      text-align: left;
+    }
+    .mode.active {
+      border-color: var(--accent2);
+      box-shadow: 0 0 0 1px var(--accent);
+    }
+    .mode strong { display: block; margin-bottom: 4px; font-size: 1rem; }
+    .mode span { color: var(--muted); font-size: 0.78rem; line-height: 1.35; }
+    .hint {
+      color: var(--muted);
+      font-size: 0.8rem;
+      margin: 0 0 12px;
+      line-height: 1.4;
+    }
+    .secrets {
+      display: none;
+      margin: 0 0 12px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #12151a;
+    }
+    .secrets.show { display: block; }
+    .secrets label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .secrets .row {
+      display: flex;
+      gap: 8px;
+      align-items: stretch;
+    }
+    .secrets input {
+      flex: 1;
+      min-width: 0;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #0f1218;
+      color: var(--text);
+      padding: 8px 10px;
+      font-size: 0.8rem;
+    }
+    .secrets button.browse {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #2a2f3a;
+      color: var(--text);
+      padding: 0 12px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      white-space: nowrap;
+    }
+    .secrets .note {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 0.75rem;
+      line-height: 1.35;
+    }
+    button.primary {
+      width: 100%;
+      border: 0;
+      border-radius: 10px;
+      padding: 12px 14px;
+      background: linear-gradient(135deg, var(--accent), #4f46e5);
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.95rem;
+    }
+    button.primary:disabled { opacity: 0.55; cursor: not-allowed; }
+    .progress-wrap { display: none; margin-top: 12px; }
+    .progress-wrap.show { display: block; }
+    .status {
+      font-size: 0.85rem;
+      color: var(--ok);
+      margin-bottom: 8px;
+      min-height: 1.2em;
+    }
+    .log {
+      height: 200px;
+      overflow: auto;
+      background: #0f1218;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font: 12px/1.4 Consolas, "Segoe UI Mono", monospace;
+      color: #d1d5db;
+      white-space: pre-wrap;
+    }
+    .err { color: #fca5a5; font-size: 0.85rem; margin-top: 8px; min-height: 1.1em; }
+  </style>
+</head>
+<body>
+  <div id="choose">
+    <h1>Live Dashboard</h1>
+    <p class="lead">One app for every PC. Pick how <strong>this</strong> computer will be used — everything else is filled in for you.</p>
+
+    <div class="modes">
+      <div class="mode" data-mode="client" id="mode-client">
+        <strong>I just need access</strong>
+        <span>Opens Settings online. No downloads. Best for most people.</span>
+      </div>
+      <div class="mode active" data-mode="host" id="mode-host">
+        <strong>This PC is the main server</strong>
+        <span>Walks you through Cloudflare, starts the server, then opens Admin Settings.</span>
+      </div>
+    </div>
+
+    <div class="secrets show" id="secretsBox">
+      <label for="secretsPath">Secrets folder (from your install pack)</label>
+      <div class="row">
+        <input id="secretsPath" type="text" placeholder="e.g. Desktop\Taco Bell Dashboard Pack\secrets" readonly />
+        <button type="button" class="browse" id="browseSecrets">Browse…</button>
+      </div>
+      <p class="note">
+        Select the <strong>secrets</strong> folder next to the installer in
+        <strong>Taco Bell Dashboard Pack</strong> (store logins, accounts, encryption key).
+      </p>
+    </div>
+
+    <p class="hint" id="hint">
+      Host setup will install tools if needed, import secrets, <strong>guide you through Cloudflare</strong>
+      (browser login + tunnel), then <strong>open Admin Settings</strong> on this PC.
+    </p>
+
+    <button class="primary" id="go">Continue</button>
+    <div class="err" id="err"></div>
+  </div>
+
+  <div class="progress-wrap" id="progressWrap">
+    <h1>Setting up…</h1>
+    <p class="lead">Leave this window open. Follow any Cloudflare / Windows prompts that appear — Admin Settings opens when setup finishes.</p>
+    <div class="status" id="status">Starting…</div>
+    <div class="log" id="log"></div>
+    <div class="err" id="err2"></div>
+  </div>
+
+  <script>
+    let mode = 'host';
+    const err = document.getElementById('err');
+    const err2 = document.getElementById('err2');
+    const hint = document.getElementById('hint');
+    const logEl = document.getElementById('log');
+    const statusEl = document.getElementById('status');
+    const secretsBox = document.getElementById('secretsBox');
+    const secretsPath = document.getElementById('secretsPath');
+
+    function setMode(next) {
+      mode = next;
+      document.getElementById('mode-client').classList.toggle('active', mode === 'client');
+      document.getElementById('mode-host').classList.toggle('active', mode === 'host');
+      secretsBox.classList.toggle('show', mode === 'host');
+      hint.innerHTML = mode === 'host'
+        ? 'Host setup will install tools if needed, import secrets, <strong>guide you through Cloudflare</strong> (browser login + tunnel), then <strong>open Admin Settings</strong> on this PC.'
+        : 'Client mode connects to <strong>tbadashboard.com</strong>. You’ll only need to sign in with your dashboard account.';
+    }
+
+    document.getElementById('mode-client').onclick = () => setMode('client');
+    document.getElementById('mode-host').onclick = () => setMode('host');
+
+    async function loadSuggestedSecrets() {
+      try {
+        const suggested = await window.desktopApi.suggestSecretsFolder();
+        if (suggested) {
+          secretsPath.value = suggested;
+          setMode('host');
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+    loadSuggestedSecrets();
+
+    document.getElementById('browseSecrets').onclick = async () => {
+      err.textContent = '';
+      try {
+        const picked = await window.desktopApi.pickSecretsFolder(secretsPath.value || undefined);
+        if (picked) secretsPath.value = picked;
+      } catch (e) {
+        err.textContent = e && e.message ? e.message : String(e);
+      }
+    };
+
+    function appendLog(line) {
+      const text = String(line || '').trim();
+      if (!text) return;
+      statusEl.textContent = text.length > 90 ? text.slice(0, 90) + '…' : text;
+      logEl.textContent += (logEl.textContent ? '\n' : '') + text;
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    window.desktopApi.onSetupProgress((msg) => appendLog(msg));
+
+    document.getElementById('go').onclick = async () => {
+      err.textContent = '';
+      err2.textContent = '';
+      const btn = document.getElementById('go');
+      btn.disabled = true;
+      document.getElementById('choose').style.display = 'none';
+      document.getElementById('progressWrap').classList.add('show');
+      appendLog(mode === 'host' ? 'Starting Host setup (Cloudflare walkthrough + Admin)…' : 'Starting Client setup…');
+      try {
+        await window.desktopApi.completeSetup({
+          mode,
+          secretsPath: mode === 'host' ? (secretsPath.value || null) : null,
+        });
+        appendLog('Opening Admin Settings…');
+      } catch (e) {
+        err2.textContent = e && e.message ? e.message : String(e);
+        btn.disabled = false;
+        document.getElementById('choose').style.display = 'block';
+        document.getElementById('progressWrap').classList.remove('show');
+      }
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,392 @@
+/* Shared tab bar design - folder tabs on light surfaces, text tabs on accent tiles. */
+
+:root {
+    --app-tab-bar-border: var(--cell-border, 2px solid) var(--charcoal, #2b2b2b);
+    --app-tab-border: var(--cell-border, 2px solid) var(--charcoal, #2b2b2b);
+    --app-tab-inactive-bg: color-mix(in srgb, var(--charcoal, #2b2b2b) 7%, var(--white, #fff));
+    --app-tab-active-bg: var(--white, #fff);
+    --app-tab-active-bottom: var(--cell-border, 2px solid) var(--white, #fff);
+    --app-tab-text: color-mix(in srgb, var(--charcoal, #2b2b2b) 68%, white);
+    --app-tab-text-active: var(--charcoal, #2b2b2b);
+    --app-tab-hover-bg: color-mix(in srgb, var(--charcoal, #2b2b2b) 11%, var(--white, #fff));
+    --app-tab-hover-text: var(--charcoal, #2b2b2b);
+    --app-tab-pad-y: 0.6rem;
+    --app-tab-pad-x: 0.35rem;
+    --app-tab-font-size: 0.78rem;
+    --app-tab-overlap: -1px;
+}
+
+/* ========== Folder tab bars ========== */
+
+.app-tabs,
+.mic-settings-tabs,
+.admin-tabs,
+.admin-tabs--full,
+.tacaudit-tabs,
+.stock-count-locations,
+.admin-store-tabs__scroll,
+.requests-tabs,
+.admin-modal .admin-area-tabs,
+.admin-store-area-tabs,
+.area-page-tabs {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: flex-end;
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    border-bottom: var(--app-tab-bar-border);
+    box-sizing: border-box;
+}
+
+.app-tabs--scroll,
+.stock-count-locations {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+}
+
+.stock-count-locations {
+    scrollbar-width: none;
+}
+
+.stock-count-locations::-webkit-scrollbar {
+    display: none;
+}
+
+/* ========== Folder tab buttons ========== */
+
+.app-tab,
+.mic-settings-tab,
+.admin-tabs .admin-tab,
+.admin-tabs--full .admin-tab,
+.tacaudit-tab,
+.stock-count-loc-btn,
+.admin-store-tabs__tab,
+button.admin-store-tabs__tab,
+.requests-tab,
+.admin-modal .admin-area-tab,
+.admin-store-area-tabs .admin-area-tab,
+.area-page-tabs .admin-area-tab,
+.area-page-tabs button.admin-area-tab {
+    flex: 1 1 0;
+    min-width: 0;
+    margin: 0 0 var(--app-tab-overlap);
+    margin-right: var(--app-tab-overlap);
+    border: var(--app-tab-border);
+    border-bottom: none;
+    border-radius: 0;
+    background: var(--app-tab-inactive-bg);
+    padding: var(--app-tab-pad-y) var(--app-tab-pad-x);
+    font: inherit;
+    font-size: var(--app-tab-font-size);
+    font-weight: var(--font-weight-semibold, 600);
+    line-height: 1.2;
+    text-align: center;
+    white-space: nowrap;
+    cursor: pointer;
+    color: var(--app-tab-text);
+    position: relative;
+    z-index: 0;
+    text-decoration: none;
+    appearance: none;
+    -webkit-appearance: none;
+    box-sizing: border-box;
+    transition:
+        background 0.15s ease,
+        color 0.15s ease,
+        border-color 0.15s ease;
+}
+
+.app-tab:last-child,
+.mic-settings-tab:last-child,
+.admin-tabs--full .admin-tab:last-child,
+.admin-tabs .admin-tab:last-child,
+.tacaudit-tab:last-child,
+.stock-count-loc-btn:last-child,
+.admin-store-tabs__tab:last-child,
+button.admin-store-tabs__tab:last-child,
+.requests-tab:last-child,
+.admin-modal .admin-area-tab:last-child,
+.admin-store-area-tabs .admin-area-tab:last-child,
+.area-page-tabs .admin-area-tab:last-child {
+    margin-right: 0;
+}
+
+.app-tab:hover:not(.is-active):not(.stock-count-loc-btn--active),
+.mic-settings-tab:hover:not(.is-active),
+.admin-tabs .admin-tab:hover:not(.is-active),
+.admin-tabs--full .admin-tab:hover:not(.is-active),
+.tacaudit-tab:hover:not(.is-active),
+.stock-count-loc-btn:hover:not(.stock-count-loc-btn--active),
+.admin-store-tabs__tab:hover:not(.is-active),
+button.admin-store-tabs__tab:hover:not(.is-active),
+.requests-tab:hover:not(.is-active),
+.admin-modal .admin-area-tab:hover:not(.is-active),
+.admin-store-area-tabs .admin-area-tab:hover:not(.is-active),
+.area-page-tabs .admin-area-tab:hover:not(.is-active) {
+    background: var(--app-tab-hover-bg);
+    color: var(--app-tab-hover-text);
+}
+
+.app-tab.is-active,
+.mic-settings-tab.is-active,
+.admin-tabs .admin-tab.is-active,
+.admin-tabs--full .admin-tab.is-active,
+.tacaudit-tab.is-active,
+.stock-count-loc-btn--active,
+.admin-store-tabs__tab.is-active,
+button.admin-store-tabs__tab.is-active,
+.requests-tab.is-active,
+.admin-modal .admin-area-tab.is-active,
+.admin-store-area-tabs .admin-area-tab.is-active,
+.area-page-tabs .admin-area-tab.is-active {
+    z-index: 1;
+    color: var(--app-tab-text-active);
+    background: var(--app-tab-active-bg);
+    border-bottom: var(--app-tab-active-bottom);
+    padding-bottom: calc(var(--app-tab-pad-y) + 1px);
+    opacity: 1;
+    font-weight: var(--font-weight-semibold, 600);
+    box-shadow: none;
+    text-decoration: none;
+}
+
+.app-tab:focus-visible,
+.mic-settings-tab:focus-visible,
+.admin-tabs--full .admin-tab:focus-visible,
+.tacaudit-tab:focus-visible,
+.stock-count-loc-btn:focus-visible,
+.admin-store-tabs__tab:focus-visible,
+.requests-tab:focus-visible,
+.admin-modal .admin-area-tab:focus-visible,
+.admin-store-area-tabs .admin-area-tab:focus-visible,
+.area-page-tabs .admin-area-tab:focus-visible {
+    outline: 2px solid var(--tb-purple-light, #9b59d0);
+    outline-offset: -2px;
+}
+
+/* Hide pipe separators where folder tabs replace inline dividers */
+.admin-modal .admin-area-tab-pipe,
+.admin-store-area-tabs .admin-area-tab-pipe,
+.area-page-tabs .admin-area-tab-pipe {
+    display: none;
+}
+
+/* ========== Tab panels ========== */
+
+.app-tabpanels,
+.mic-settings-tabpanels {
+    padding-top: 1rem;
+}
+
+.app-tabpanel,
+.mic-settings-tabpanel {
+    display: none;
+}
+
+.app-tabpanel.is-active,
+.mic-settings-tabpanel.is-active {
+    display: block;
+}
+
+/* ========== Text tabs on accent / tile headers ========== */
+
+.app-tabs--text,
+.admin-area-text-track {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    margin: 0 0 calc(4px * var(--dashboard-scale, 1));
+    padding: 0;
+    border-bottom: none;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.app-tab--text,
+.admin-market-text-tab,
+.admin-area-text-tab {
+    flex: 0 1 auto;
+    min-width: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    margin: 0;
+    padding: calc(2px * var(--dashboard-scale, 1)) calc(8px * var(--dashboard-scale, 1));
+    font: inherit;
+    font-size: var(--font-size-3, 1.35rem);
+    font-weight: var(--font-weight-ui-label, 500);
+    line-height: 1.2;
+    text-align: center;
+    white-space: nowrap;
+    cursor: pointer;
+    color: color-mix(in srgb, var(--tb-purple-light, #9b63d6) 52%, white 48%);
+    opacity: 0.55;
+    transition:
+        color 0.35s ease,
+        opacity 0.35s ease,
+        font-weight 0.35s ease;
+}
+
+.app-tab--text.is-active,
+.admin-market-text-tab.is-active,
+.admin-area-text-tab.is-active {
+    color: #fff;
+    opacity: 1;
+    font-weight: var(--font-weight-semibold, 600);
+    background: transparent;
+    border-bottom: none;
+    padding-bottom: calc(2px * var(--dashboard-scale, 1));
+    box-shadow: inset 0 -2px 0 color-mix(in srgb, white 85%, transparent);
+}
+
+.app-tab--text:hover:not(.is-active),
+.admin-market-text-tab:hover:not(.is-active),
+.admin-area-text-tab:hover:not(.is-active) {
+    opacity: 0.72;
+    background: transparent;
+}
+
+.admin-market-text-row.is-dimmed .admin-market-text-tab,
+.admin-area-text-row.is-dimmed .admin-area-text-tab {
+    opacity: 0.35;
+}
+
+.admin-market-text-row.is-dimmed .admin-market-text-tab.is-active,
+.admin-area-text-row.is-dimmed .admin-area-text-tab.is-active {
+    opacity: 1;
+}
+
+/* Legacy inline area tabs inside MIC tiles (no pipe bar) */
+.mic-tile--area-header > .admin-area-tabs:not(.area-page-tabs) {
+    border-bottom: none;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.mic-tile--area-header .admin-area-tab {
+    flex: 0 1 auto;
+    font-size: var(--font-size-6, 0.875rem);
+    padding: calc(3px * var(--dashboard-scale, 1)) calc(7px * var(--dashboard-scale, 1));
+    border: var(--app-tab-border);
+    border-bottom: none;
+    background: color-mix(in srgb, var(--charcoal, #2b2b2b) 7%, var(--white, #fff));
+}
+
+.mic-tile--area-header .admin-area-tab.is-active {
+    background: var(--white, #fff);
+    border-bottom: var(--app-tab-active-bottom);
+}
+
+/* ========== Stock count (dark header band) ========== */
+
+.stock-count-locations {
+    --app-tab-bar-border: var(--cell-border, 2px solid) var(--dark-purple-border, #4b3a63);
+    --app-tab-border: var(--cell-border, 2px solid) var(--dark-purple-border, #4b3a63);
+    --app-tab-inactive-bg: color-mix(in srgb, var(--blank, #fff) 12%, var(--dark-purple-border, #4b3a63));
+    --app-tab-active-bg: var(--charcoal, #231e1f);
+    --app-tab-active-bottom: var(--cell-border, 2px solid) var(--charcoal, #231e1f);
+    --app-tab-text: var(--blank, #fff);
+    --app-tab-text-active: var(--white, #fff);
+    --app-tab-hover-bg: color-mix(in srgb, var(--blank, #fff) 22%, var(--dark-purple-border, #4b3a63));
+    --app-tab-hover-text: var(--blank, #fff);
+    --app-tab-pad-y: 10px;
+    --app-tab-pad-x: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.stock-count-loc-btn + .stock-count-loc-btn {
+    border-left: none;
+}
+
+.stock-count-loc-btn--done:not(.stock-count-loc-btn--active) {
+    background: color-mix(in srgb, var(--blank, #fff) 18%, var(--dark-purple-border, #4b3a63));
+    border-color: var(--dark-purple-border, #4b3a63);
+}
+
+/* ========== Admin store tabs container ========== */
+
+.admin-store-tabs {
+    background: color-mix(in srgb, var(--tb-purple, #702082) 9%, var(--grey, #f0eeec));
+    border: none;
+    border-top: 1px solid color-mix(in srgb, var(--tb-purple, #702082) 22%, var(--charcoal, #2b2b2b));
+    border-bottom: var(--app-tab-bar-border);
+    border-radius: 0;
+}
+
+.admin-store-tabs__tab,
+button.admin-store-tabs__tab {
+    min-height: calc(42px * var(--dashboard-scale, 1));
+    padding: calc(12px * var(--dashboard-scale, 1)) calc(10px * var(--dashboard-scale, 1));
+    font-size: var(--font-size-5, 1rem);
+    border-right: var(--app-tab-border);
+    border-top: none;
+    border-left: none;
+    background: var(--app-tab-inactive-bg);
+}
+
+.admin-store-tabs__tab:last-child,
+button.admin-store-tabs__tab:last-child {
+    border-right: none;
+}
+
+/* ========== TacAudit history card tabs ========== */
+
+.tacaudit-tab:last-child {
+    border-right: none;
+}
+
+/* Store logins modal: light grey body, charcoal header only */
+.admin-modal--store-logins .admin-tabs--full,
+.admin-modal--store-logins .admin-store-logins-view-tabs {
+    --app-tab-bar-border: 1px solid #a8a8a8;
+    --app-tab-border: 1px solid #a8a8a8;
+    --app-tab-inactive-bg: #c4c4c4;
+    --app-tab-active-bg: #e0e0e0;
+    --app-tab-active-bottom: 1px solid #e0e0e0;
+    --app-tab-text: rgba(0, 0, 0, 0.62);
+    --app-tab-text-active: #2a2a2a;
+    --app-tab-hover-bg: #d0d0d0;
+    --app-tab-hover-text: #1a1a1a;
+    margin: 0;
+    padding: 0;
+    background: #d0d0d0;
+    border-bottom: 1px solid #a8a8a8;
+}
+
+.admin-modal--store-logins .admin-tabs--full .admin-tab.is-active,
+.admin-modal--store-logins .admin-store-logins-view-tabs .admin-tab.is-active {
+    background: #e0e0e0;
+    border-color: #a8a8a8;
+    border-bottom-color: #e0e0e0;
+    color: #1a1a1a;
+}
+
+/* ========== Dark mode ========== */
+
+html.mic-dark-mode {
+    --app-tab-bar-border: var(--cell-border, 2px solid) #5a5a5a;
+    --app-tab-border: var(--cell-border, 2px solid) #5a5a5a;
+    --app-tab-inactive-bg: #1e1e1e;
+    --app-tab-active-bg: #262626;
+    --app-tab-active-bottom: var(--cell-border, 2px solid) #262626;
+    --app-tab-text: #9a9a9a;
+    --app-tab-text-active: #f0f0f0;
+    --app-tab-hover-bg: #2a2a2a;
+    --app-tab-hover-text: #d0d0d0;
+}
+
+html.mic-dark-mode .admin-tabs--full .admin-tab.is-active {
+    color: var(--app-tab-text-active);
+    background: var(--app-tab-active-bg);
+    border-bottom-color: #262626;
+}
+
+html.mic-dark-mode .admin-store-tabs {
+    background: #1e1e1e;
+    border-top-color: #5a5a5a;
+}

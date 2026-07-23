@@ -1,0 +1,103 @@
+@import url('/styles/fonts.css');
+@import url('/styles/app-tabs.css');
+
+/* -----------------------------------------------------------
+   Shared design tokens — dashboard palette & typography
+   Reference: dashboard/public/styles/dashboard.css
+   Note: fonts/app-tabs stay as @import for legacy HTML that only
+   pulls tokens via mic.css / dashboard.css. Shell pages also link
+   them explicitly so the browser can start those fetches earlier.
+----------------------------------------------------------- */
+:root {
+    --dashboard-scale: 1;
+
+    --font-size-1: 2.35rem;
+    --font-size-2: 1.65rem;
+    --font-size-3: 1.35rem;
+    --font-size-4: 1.15rem;
+    --font-size-5: 1rem;
+
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+    --font-weight-heavy: 800;
+
+    --font-weight-page-title: var(--font-weight-heavy);
+    --font-weight-ui-label: var(--font-weight-semibold);
+    --font-weight-clock: var(--font-weight-bold);
+    --font-weight-subtitle: var(--font-weight-normal);
+    --font-weight-legend: var(--font-weight-normal);
+    --font-weight-grid-label: var(--font-weight-bold);
+    --font-weight-grid-value: var(--font-weight-normal);
+    --font-weight-meal-heading: var(--font-weight-heavy);
+    --font-weight-meal-lines: var(--font-weight-bold);
+
+    --dashboard-grid-min-height: calc(68px * var(--dashboard-scale));
+    --dashboard-grid-label-col: calc(190px * var(--dashboard-scale));
+    --grid-data-text-color: #000000;
+    --meal-period-body-padding-y: 8px;
+    --meal-period-body-padding-x: 10px;
+    --meal-period-stack-gap: 4px;
+    --mic-tile-radius: calc(10px * var(--dashboard-scale));
+    --mic-tile-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 2px 8px rgba(15, 23, 42, 0.04);
+    --mic-tile-border: 1px solid rgba(15, 23, 42, 0.07);
+    --mic-settings-radius: var(--mic-tile-radius);
+
+    --cell-border: 2px solid;
+
+    --charcoal: #231e1f;
+    --grey: #d9d9d9;
+    --blank: #f8fafc;
+    --white: #ffffff;
+    --transparent: transparent;
+
+    --tb-purple: #702082;
+    --tb-purple-light: #7a3eb1;
+    --tb-teal: #0d9488;
+    --tb-teal-hover: #0f766e;
+    --dark-purple-border: #4b3a63;
+
+    --blank-border: #cbd5e1;
+    --good: #99bb82;
+    --good-border: #6d8858;
+    --near: #f8cb6f;
+    --near-border: #c9983a;
+    --bad: #d99792;
+    --bad-border: #b86f69;
+
+    --popup-progress-gradient-start: color-mix(in srgb, var(--tb-purple-light) 45%, var(--charcoal));
+    --popup-progress-gradient-end: color-mix(in srgb, var(--tb-purple-light) 62%, var(--charcoal));
+    --popup-transition-duration: 350ms;
+    --popup-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+    --shell-transition-duration: 280ms;
+    --shell-transition-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html.mic-flat-tiles {
+    --mic-tile-radius: 0;
+    --mic-tile-shadow: none;
+}
+
+html.mic-dark-mode:not(.mic-flat-tiles) {
+    --mic-tile-shadow: 0 2px 10px rgba(0, 0, 0, 0.32);
+    --mic-tile-border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+html.mic-dark-mode.mic-flat-tiles {
+    --mic-tile-border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+body.color-blind-mode,
+html.color-blind-mode {
+    --good: #6b9fd4;
+    --good-border: #3d7ab8;
+}
+
+html.mic-dark-mode {
+    --grey: #161616;
+    --charcoal: #e8e8e8;
+    --blank: #1e1e1e;
+    --blank-border: #444;
+}

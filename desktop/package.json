@@ -1,0 +1,82 @@
+{
+  "name": "area-coach-tools-desktop",
+  "version": "1.0.0",
+  "description": "Area Coach Tools — local Windows app (Ash / Tom login)",
+  "main": "src/coach-main.js",
+  "author": "Orbro",
+  "license": "ISC",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder --win nsis portable"
+  },
+  "dependencies": {
+    "electron-store": "^8.2.0"
+  },
+  "devDependencies": {
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.orbro.areacoachtools",
+    "productName": "Area Coach Tools",
+    "copyright": "Copyright © Orbro",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "users.seed.example.json",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "..",
+        "to": "server",
+        "filter": [
+          "**/*",
+          "!desktop{,/**/*}",
+          "!.git{,/**/*}",
+          "!**/*.md",
+          "!**/probe-screenshots{,/**/*}"
+        ]
+      },
+      {
+        "from": "users.seed.example.json",
+        "to": "users.seed.example.json"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "Area-Coach-Tools-${version}.${ext}",
+      "signAndEditExecutable": false,
+      "verifyUpdateCodeSignature": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Area Coach Tools",
+      "runAfterFinish": true
+    },
+    "portable": {
+      "artifactName": "Area-Coach-Tools-Portable-${version}.exe"
+    }
+  }
+}

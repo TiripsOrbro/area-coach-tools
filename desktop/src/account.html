@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Account — Area Coach Tools</title>
+  <style>
+    :root {
+      --bg: #141018; --ink: #f6f1ff; --muted: rgba(246,241,255,.7); --accent: #c084fc;
+      --card: rgba(255,255,255,.06); --line: rgba(255,255,255,.12); --ok: #86efac; --bad: #fda4af;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; font-family: "Segoe UI", system-ui, sans-serif; color: var(--ink);
+      background: radial-gradient(900px 500px at 10% 0%, rgba(192,132,252,.28), transparent 55%),
+        linear-gradient(160deg, #120c18, #1c1426 50%, #141018);
+      padding: 28px 20px 48px;
+    }
+    .wrap { max-width: 640px; margin: 0 auto; }
+    h1 { margin: 0 0 6px; }
+    .sub { color: var(--muted); margin: 0 0 20px; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px; margin-bottom: 14px; }
+    label { display: block; font-size: .85rem; color: var(--muted); margin: 8px 0 4px; }
+    input[type=text], input[type=password], input[type=email] {
+      width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line);
+      background: rgba(0,0,0,.25); color: var(--ink);
+    }
+    .store-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; max-height: 220px; overflow: auto; }
+    .store-grid label { display: flex; gap: 8px; align-items: center; color: var(--ink); margin: 0; font-size: .92rem; }
+    .email-rows { display: grid; gap: 8px; }
+    .email-rows .row { display: grid; grid-template-columns: 90px 1fr; gap: 8px; align-items: center; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+    button {
+      border: 1px solid rgba(192,132,252,.45); background: rgba(192,132,252,.18);
+      color: var(--ink); border-radius: 10px; padding: 10px 14px; cursor: pointer;
+    }
+    button.secondary { background: transparent; }
+    .msg { margin-top: 12px; min-height: 1.2em; }
+    .ok { color: var(--ok); } .bad { color: var(--bad); }
+    h3 { margin: 0 0 10px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1 id="title">Account</h1>
+    <p class="sub" id="subtitle">Credentials, store access, and emails for this coach.</p>
+
+    <div class="card">
+      <h3>Macromatix</h3>
+      <label>Username</label>
+      <input id="mmx-user" type="text" autocomplete="username" />
+      <label>Password</label>
+      <input id="mmx-pass" type="password" autocomplete="current-password" />
+    </div>
+    <div class="card">
+      <h3>LifeLenz</h3>
+      <label>Email</label>
+      <input id="lz-email" type="email" autocomplete="email" />
+      <label>Password</label>
+      <input id="lz-pass" type="password" autocomplete="current-password" />
+    </div>
+    <div class="card">
+      <h3>Alert email (build-to warnings)</h3>
+      <label>Email</label>
+      <input id="alert-email" type="email" placeholder="you@example.com" />
+    </div>
+    <div class="card">
+      <h3 id="stores-title">Stores in my region</h3>
+      <p class="sub" style="margin-bottom:10px">Tick stores this account can run tools for.</p>
+      <div class="store-grid" id="store-grid">Loading…</div>
+    </div>
+    <div class="card">
+      <h3>Store Prep Guide emails</h3>
+      <p class="sub" style="margin-bottom:10px">Daily 5am PDF recipients (per store).</p>
+      <div class="email-rows" id="email-rows"></div>
+    </div>
+    <div class="actions">
+      <button id="save">Save changes</button>
+      <button class="secondary" id="back">Back to tools</button>
+      <button class="secondary" id="logout">Log out</button>
+    </div>
+    <div class="msg" id="msg"></div>
+  </div>
+  <script>
+    let userId = null;
+    let regionStores = [];
+    const msg = document.getElementById('msg');
+
+    async function load() {
+      const active = await window.coachApi.getActive();
+      if (!active?.userId) { location.href = './login.html'; return; }
+      userId = active.userId;
+      document.getElementById('title').textContent = `${active.displayName || userId} — account`;
+      document.getElementById('subtitle').textContent =
+        `Region ${active.region || ''} · update portal logins, store access, and emails.`;
+      document.getElementById('stores-title').textContent = `Stores in ${active.region || 'region'}`;
+
+      const creds = await window.coachApi.getCredentials(userId);
+      document.getElementById('mmx-user').value = creds.mmx?.username || '';
+      document.getElementById('mmx-pass').value = creds.mmx?.password || '';
+      document.getElementById('lz-email').value = creds.lifelenz?.email || '';
+      document.getElementById('lz-pass').value = creds.lifelenz?.password || '';
+      document.getElementById('alert-email').value = creds.alertEmail || '';
+
+      const region = await window.coachApi.listRegionStores(userId);
+      regionStores = region.stores || [];
+      const enabled = new Set(creds.enabledStores || []);
+      const grid = document.getElementById('store-grid');
+      if (!regionStores.length) {
+        grid.textContent = 'No stores found for this region in .storelist.';
+      } else {
+        grid.innerHTML = regionStores.map((s) => `
+          <label>
+            <input type="checkbox" data-store="${s.storeNumber}" ${enabled.has(String(s.storeNumber)) || (!enabled.size && true) ? 'checked' : ''} />
+            <span>${s.storeNumber} ${s.storeName || ''}</span>
+          </label>
+        `).join('');
+        // If profile had empty enabled, check all
+        if (!creds.enabledStores?.length) {
+          grid.querySelectorAll('input[type=checkbox]').forEach((el) => { el.checked = true; });
+        } else {
+          grid.querySelectorAll('input[type=checkbox]').forEach((el) => {
+            el.checked = enabled.has(el.dataset.store);
+          });
+        }
+      }
+
+      const emails = (await window.coachApi.getStoreEmails()).emails || {};
+      const emailHost = document.getElementById('email-rows');
+      emailHost.innerHTML = regionStores.map((s) => `
+        <div class="row">
+          <span>${s.storeNumber}</span>
+          <input type="email" data-email-store="${s.storeNumber}" value="${emails[s.storeNumber] || ''}" placeholder="store@example.com" />
+        </div>
+      `).join('') || '<p class="sub">No stores</p>';
+    }
+
+    document.getElementById('save').addEventListener('click', async () => {
+      msg.className = 'msg';
+      msg.textContent = 'Saving…';
+      try {
+        const enabledStores = [...document.querySelectorAll('#store-grid input[type=checkbox]:checked')]
+          .map((el) => el.dataset.store);
+        await window.coachApi.saveCredentials(userId, {
+          mmx: {
+            username: document.getElementById('mmx-user').value.trim(),
+            password: document.getElementById('mmx-pass').value,
+          },
+          lifelenz: {
+            email: document.getElementById('lz-email').value.trim(),
+            password: document.getElementById('lz-pass').value,
+          },
+          alertEmail: document.getElementById('alert-email').value.trim(),
+          enabledStores,
+        });
+        const map = {};
+        document.querySelectorAll('[data-email-store]').forEach((el) => {
+          map[el.dataset.emailStore] = el.value.trim();
+        });
+        await window.coachApi.setStoreEmails(map);
+        msg.className = 'msg ok';
+        msg.textContent = 'Saved.';
+      } catch (err) {
+        msg.className = 'msg bad';
+        msg.textContent = err.message || String(err);
+      }
+    });
+    document.getElementById('back').addEventListener('click', () => window.coachApi.openTools());
+    document.getElementById('logout').addEventListener('click', async () => {
+      await window.coachApi.logout();
+      location.href = './login.html';
+    });
+    load();
+  </script>
+</body>
+</html>

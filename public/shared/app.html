@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en" class="page-scroll" data-shell-nav="1">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#7a3eb1">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="TBADash">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="/styles/fonts.css">
+    <link rel="stylesheet" href="/styles/app-tabs.css">
+    <link rel="stylesheet" href="/styles/design-tokens.css">
+    <link rel="stylesheet" href="/styles/brand-mark.css">
+    <link rel="stylesheet" href="/styles/loading-dots.css">
+    <link rel="stylesheet" href="/styles/shell-chrome.css">
+    <link rel="stylesheet" href="/styles/shell-transition.css">
+    <link rel="stylesheet" href="/styles/page-scroll.css">
+    <link rel="stylesheet" href="/styles/nav-back.css">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/icon.svg">
+</head>
+<body class="app-shell-root">
+    <div class="app-shell-viewport" id="app-shell-viewport">
+        <div class="app-shell-view" id="app-shell-view">
+            <div id="app" class="app-boot-loading" aria-busy="true">
+                <div class="loading-dots loading-dots--lg" role="status" aria-label="Loading">
+                    <span class="loading-dots__dot" aria-hidden="true"></span>
+                    <span class="loading-dots__dot" aria-hidden="true"></span>
+                    <span class="loading-dots__dot" aria-hidden="true"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="popup">
+        <div class="popup-progress"></div>
+        <div class="popup-inner">
+            <div class="popup-icon"></div>
+            <div class="popup-message"></div>
+            <div class="popup-buttons">
+                <button>Busy</button>
+                <button>Quiet</button>
+            </div>
+        </div>
+    </div>
+    <script src="/scripts/brand-mark.js"></script>
+    <script src="/scripts/dashboard-preload-bridge.js"></script>
+    <script src="/scripts/loading-dots.js"></script>
+    <script src="/scripts/app-paths.js"></script>
+    <script src="/scripts/dashboard-meta.js"></script>
+    <script src="/scripts/app-shell.js"></script>
+</body>
+</html>

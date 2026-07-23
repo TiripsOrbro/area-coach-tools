@@ -1,0 +1,5837 @@
+@import url('/styles/design-tokens.css');
+@import url('/styles/app-tabs.css');
+
+/* Full-page settings — /Admin/Settings */
+html:has(body.admin-settings-page) {
+    height: 100%;
+    max-height: 100dvh;
+    min-height: 100dvh;
+    overflow: hidden;
+}
+
+html.page-scroll:has(body.admin-settings-page) {
+    overflow: hidden;
+    height: 100%;
+    max-height: 100dvh;
+}
+
+html.page-scroll body.admin-settings-page {
+    height: 100%;
+    max-height: 100dvh;
+    min-height: 100dvh;
+    overflow: hidden;
+}
+
+/* Beat page-scroll.css generic #app / shell rules so the sidebar fills the viewport. */
+html.page-scroll body.admin-settings-page #app {
+    flex: 1 1 0;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    overflow: hidden;
+}
+
+html.page-scroll body.admin-settings-page .app-shell-viewport,
+html.page-scroll body.admin-settings-page .app-shell-view {
+    flex: 1 1 0;
+    height: auto;
+    max-height: none;
+    min-height: 0;
+    overflow: hidden;
+}
+
+body.admin-settings-page {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+    background: var(--grey);
+    color: var(--charcoal);
+    color-scheme: light;
+    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial,
+        sans-serif;
+    font-size: var(--font-size-4);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+
+body.admin-settings-page.app-shell-root {
+    min-height: 0;
+}
+
+/* App shell keeps a hidden .popup in normal document flow; it still reserves ~170px
+   at the bottom of flex body. With opacity:0 the page grey shows through as “padding”. */
+body.admin-settings-page > .popup {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20000;
+    pointer-events: none;
+}
+
+body.admin-settings-page > .popup.popup-show {
+    pointer-events: auto;
+}
+
+body.admin-settings-page .app-shell-viewport {
+    flex: 1 1 0;
+    min-height: 0;
+    height: auto;
+    max-height: none;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+body.admin-settings-page .app-shell-view {
+    flex: 1 1 0;
+    min-height: 0;
+    height: auto;
+    max-height: none;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+body.admin-settings-page .admin-settings-shell,
+body.admin-settings-page .admin-settings-shell button,
+body.admin-settings-page .admin-settings-shell input,
+body.admin-settings-page .admin-settings-shell select,
+body.admin-settings-page .admin-settings-shell textarea {
+    font: inherit;
+}
+
+body.admin-settings-page .admin-settings-header .nav-back-bubble {
+    background: color-mix(in srgb, var(--white) 12%, transparent);
+    color: var(--white);
+    border: var(--cell-border) color-mix(in srgb, var(--white) 22%, transparent);
+    box-shadow: none;
+}
+
+body.admin-settings-page .admin-settings-header .nav-back-bubble:hover {
+    background: color-mix(in srgb, var(--white) 22%, transparent);
+    box-shadow: none;
+}
+
+body.admin-settings-page > .nav-back-host--floating {
+    display: none;
+}
+
+html.mic-overview-page body.admin-settings-page .app-shell-view #app,
+html.admin-overview-page body.admin-settings-page .app-shell-view #app,
+body.admin-settings-page #app {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    padding: 0;
+    overflow: hidden;
+}
+
+.admin-settings-shell {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    flex: 1 1 0;
+    min-height: 0;
+    height: auto;
+    box-sizing: border-box;
+}
+
+.admin-settings-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 0.75rem 1rem;
+    width: 100%;
+    box-sizing: border-box;
+    --admin-settings-header-control: 44px;
+    --admin-settings-header-pad-y: calc(16px * var(--dashboard-scale));
+    min-height: calc(
+        var(--admin-settings-header-control) + 2 * var(--admin-settings-header-pad-y) +
+            env(safe-area-inset-top, 0px)
+    );
+    padding: calc(var(--admin-settings-header-pad-y) + env(safe-area-inset-top, 0px))
+        max(1.25rem, env(safe-area-inset-right)) var(--admin-settings-header-pad-y)
+        max(1.25rem, env(safe-area-inset-left));
+    border-bottom: var(--cell-border) color-mix(in srgb, var(--white) 18%, var(--charcoal));
+    background: var(--charcoal);
+    color: var(--white);
+    flex-shrink: 0;
+    z-index: 150;
+}
+
+.admin-settings-header__back {
+    justify-self: start;
+    align-self: center;
+    display: flex;
+    align-items: center;
+    min-height: var(--admin-settings-header-control);
+}
+
+body.admin-settings-page .admin-settings-header__back.nav-back-host,
+body.admin-settings-page .admin-settings-header .nav-back-host {
+    position: static;
+    inset: auto;
+    top: auto;
+    left: auto;
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    min-height: var(--admin-settings-header-control);
+}
+
+.admin-settings-title {
+    grid-column: 2;
+    margin: 0;
+    font-size: var(--font-size-2);
+    font-weight: var(--font-weight-page-title);
+    letter-spacing: 0.02em;
+    line-height: 1;
+    text-align: center;
+    color: var(--white);
+    align-self: center;
+}
+
+.admin-settings-header__menu {
+    grid-column: 3;
+    justify-self: end;
+    align-self: center;
+}
+
+.admin-settings-nav-toggle {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: calc(8px * var(--dashboard-scale)) calc(14px * var(--dashboard-scale));
+    border: var(--cell-border) color-mix(in srgb, var(--white) 22%, transparent);
+    background: color-mix(in srgb, var(--white) 10%, transparent);
+    color: var(--white);
+    font: inherit;
+    font-size: var(--font-size-5);
+    font-weight: var(--font-weight-ui-label);
+    cursor: pointer;
+    border-radius: var(--mic-settings-radius, var(--mic-tile-radius, 0));
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.admin-settings-nav-toggle-icon {
+    display: block;
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.admin-settings-nav-toggle:hover {
+    border-color: color-mix(in srgb, var(--white) 35%, transparent);
+    background: color-mix(in srgb, var(--white) 18%, transparent);
+}
+
+.admin-settings-body {
+    display: flex;
+    flex: 1 1 0;
+    min-height: 0;
+    width: 100%;
+    position: relative;
+    align-items: stretch;
+    overflow: hidden;
+}
+
+.admin-settings-sidebar-wrap {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    align-self: stretch;
+    width: 240px;
+    min-height: 0;
+    height: auto;
+    box-sizing: border-box;
+    border-right: var(--cell-border) color-mix(in srgb, var(--charcoal) 12%, transparent);
+    background: var(--white);
+}
+
+.admin-settings-sidebar {
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: 0;
+    box-sizing: border-box;
+    padding: calc(16px * var(--dashboard-scale)) 0 0;
+    border-right: none;
+    background: transparent;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.admin-settings-sidebar-footer {
+    flex-shrink: 0;
+    margin-top: auto;
+    padding: calc(12px * var(--dashboard-scale)) calc(16px * var(--dashboard-scale))
+        calc(16px * var(--dashboard-scale));
+    border-top: var(--cell-border) color-mix(in srgb, var(--charcoal) 12%, transparent);
+}
+
+.admin-settings-sign-out {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    box-sizing: border-box;
+    padding: calc(10px * var(--dashboard-scale)) calc(14px * var(--dashboard-scale));
+    border: var(--cell-border) color-mix(in srgb, var(--charcoal) 22%, transparent);
+    background: transparent;
+    color: var(--charcoal);
+    font: inherit;
+    font-size: var(--font-size-5);
+    font-weight: var(--font-weight-ui-label);
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.admin-settings-sign-out:hover {
+    border-color: color-mix(in srgb, #c0392b 55%, var(--charcoal));
+    background: color-mix(in srgb, #c0392b 8%, var(--white));
+    color: #a93226;
+}
+
+.admin-settings-nav-backdrop {
+    display: none;
+}
+
+.admin-settings-nav-group + .admin-settings-nav-group {
+    margin-top: calc(8px * var(--dashboard-scale));
+}
+
+.admin-settings-nav-group-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    width: 100%;
+    box-sizing: border-box;
+    padding: calc(10px * var(--dashboard-scale)) calc(16px * var(--dashboard-scale));
+    border: none;
+    border-bottom: 1px solid color-mix(in srgb, var(--charcoal) 10%, transparent);
+    background: color-mix(in srgb, var(--charcoal) 4%, var(--white));
+    color: var(--charcoal);
+    font: inherit;
+    font-size: var(--font-size-5);
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.admin-settings-nav-group-toggle:hover {
+    background: color-mix(in srgb, var(--tb-purple-light) 10%, var(--white));
+}
+
+.admin-settings-nav-group.is-active > .admin-settings-nav-group-toggle {
+    background: color-mix(in srgb, var(--tb-purple-light) 8%, var(--white));
+}
+
+.admin-settings-nav-group-label {
+    flex: 1;
+    min-width: 0;
+}
+
+.admin-settings-nav-group-items {
+    display: none;
+    flex-direction: column;
+    gap: 2px;
+    padding: calc(4px * var(--dashboard-scale)) 0 calc(8px * var(--dashboard-scale));
+}
+
+.admin-settings-nav-group.is-expanded .admin-settings-nav-group-items {
+    display: flex;
+}
+
+.admin-settings-nav-chevron {
+    flex-shrink: 0;
+    width: 0.55rem;
+    height: 0.55rem;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(-45deg);
+    transition: transform 0.15s ease;
+    opacity: 0.55;
+    margin-top: -0.1rem;
+}
+
+.admin-settings-nav-group.is-expanded > .admin-settings-nav-group-toggle .admin-settings-nav-chevron,
+.admin-settings-nav-parent.is-expanded > .admin-settings-nav-parent-toggle .admin-settings-nav-chevron {
+    transform: rotate(45deg);
+    margin-top: 0.1rem;
+}
+
+.admin-settings-nav-item,
+.admin-settings-nav-parent-toggle {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+    padding: calc(9px * var(--dashboard-scale)) calc(16px * var(--dashboard-scale));
+    border: none;
+    background: transparent;
+    color: var(--charcoal);
+    font: inherit;
+    font-size: var(--font-size-5);
+    font-weight: var(--font-weight-ui-label);
+    text-align: left;
+    cursor: pointer;
+    border-radius: 0;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.admin-settings-nav-item:hover,
+.admin-settings-nav-parent-toggle:hover {
+    background: color-mix(in srgb, var(--tb-purple-light) 8%, var(--white));
+}
+
+.admin-settings-nav-item.is-active {
+    background: color-mix(in srgb, var(--tb-purple-light, #9b59d0) 14%, var(--white, #fff));
+    color: var(--charcoal, #2b2b2b);
+    font-weight: 600;
+}
+
+.admin-settings-nav-item--nested {
+    padding-left: calc(28px * var(--dashboard-scale));
+    font-size: var(--font-size-6);
+}
+
+.admin-settings-nav-parent.is-active > .admin-settings-nav-parent-toggle {
+    color: var(--charcoal);
+    font-weight: 600;
+}
+
+.admin-settings-nav-parent-toggle {
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.admin-settings-nav-parent-label {
+    flex: 1;
+    min-width: 0;
+}
+
+.admin-settings-nav-children {
+    display: none;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.admin-settings-nav-parent.is-expanded .admin-settings-nav-children {
+    display: flex;
+}
+
+/* Legacy horizontal nav — kept for in-section segmented tabs */
+.admin-settings-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: calc(6px * var(--dashboard-scale));
+    padding-bottom: calc(10px * var(--dashboard-scale));
+}
+
+.admin-settings-nav-wrap {
+    display: grid;
+    gap: 0.65rem;
+    width: 100%;
+    padding-bottom: calc(10px * var(--dashboard-scale));
+}
+
+.admin-settings-nav-row .admin-settings-section-tabs,
+.admin-settings-segmented-tabs .admin-accounts-scope-row {
+    width: 100%;
+}
+
+.admin-settings-segmented-tabs {
+    margin-bottom: 1rem;
+    width: 100%;
+}
+
+.admin-settings-segmented-tabs .admin-accounts-scope-row-wrap {
+    margin: 0;
+}
+
+.admin-settings-nav-item.admin-accounts-scope-chip.is-active,
+.admin-settings-tab.admin-accounts-scope-chip.is-active {
+    background: color-mix(in srgb, var(--tb-purple-light, #9b59d0) 12%, var(--white, #fff));
+    color: var(--charcoal, #2b2b2b);
+}
+
+.admin-settings-tab {
+    flex: 0 1 auto;
+}
+
+.admin-settings-tab:not(.admin-accounts-scope-chip) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: calc(8px * var(--dashboard-scale)) calc(14px * var(--dashboard-scale));
+    border: var(--mic-tile-border);
+    background: var(--blank);
+    color: var(--charcoal);
+    font: inherit;
+    font-size: var(--font-size-5);
+    font-weight: var(--font-weight-ui-label);
+    cursor: pointer;
+    border-radius: var(--mic-settings-radius, var(--mic-tile-radius, 0));
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.admin-settings-tab:not(.admin-accounts-scope-chip):hover {
+    border-color: var(--tb-purple-light);
+    background: color-mix(in srgb, var(--tb-purple-light) 8%, var(--white));
+}
+
+.admin-settings-tab.is-active:not(.admin-accounts-scope-chip) {
+    border-color: var(--charcoal);
+    background: var(--charcoal);
+    color: var(--white);
+}
+
+.admin-settings-main {
+    flex: 1 1 0;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    padding: calc(16px * var(--dashboard-scale)) max(1.25rem, env(safe-area-inset-right)) 0
+        max(1.25rem, env(safe-area-inset-left));
+    overflow: hidden;
+    background: var(--white);
+}
+
+.admin-settings-content {
+    width: 100%;
+    flex: 1 1 0;
+    min-height: 0;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.admin-settings-section-panel {
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 0;
+}
+
+.admin-settings-section-panel[hidden] {
+    display: none !important;
+}
+
+.admin-settings-section-panel:not([hidden]) {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.admin-settings-section-panel:not([hidden]):not(:has(> .admin-modal)) {
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+}
+
+.admin-settings-user-panel {
+    width: 100%;
+    max-width: none;
+}
+
+.admin-settings-loading-panel {
+    display: flex;
+    align-items: flex-start;
+    width: 100%;
+    min-height: 12rem;
+    box-sizing: border-box;
+}
+
+.admin-settings-loading,
+.admin-settings-empty {
+    margin: 0;
+    width: 100%;
+    color: color-mix(in srgb, var(--charcoal) 55%, transparent);
+}
+
+.admin-settings-content .admin-modal {
+    width: 100%;
+    max-width: none;
+    max-height: none;
+    flex: 1 1 0;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: none;
+    border-radius: 0;
+    padding: 0;
+    background: transparent;
+    box-sizing: border-box;
+}
+
+.admin-settings-content .admin-accounts-view,
+.admin-settings-content .admin-accounts-create,
+.admin-settings-content .admin-accounts-form-grid {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.admin-settings-content .admin-accounts-form-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+}
+
+.admin-settings-content .admin-accounts-create-actions,
+.admin-settings-content .admin-accounts-scope-stack {
+    grid-column: 1 / -1;
+}
+
+.admin-settings-user-panel .mic-settings-page-prefs,
+.admin-settings-user-panel .mic-settings-tabpanel,
+.admin-settings-user-panel .mic-settings-actions,
+.admin-settings-user-panel .mic-settings-pref-block,
+.admin-settings-user-panel .mic-settings-store-email,
+.admin-settings-user-panel .mic-colour-samples {
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+}
+
+/* Standalone settings page: tabpanel class is for the modal picker only */
+.admin-settings-section-panel .mic-settings-tabpanel {
+    display: block;
+}
+
+.app-shell-view:has(.admin-settings-shell) {
+    overflow: hidden;
+    flex: 1 1 0;
+    min-height: 0;
+    height: auto;
+    max-height: none;
+}
+
+.admin-settings-content .admin-modal--build-to,
+.admin-settings-content .admin-modal--forecast,
+.admin-settings-content .admin-modal--smg-nsf,
+.admin-settings-content .admin-accounts-view,
+.admin-settings-content .admin-store-logins-view,
+.admin-settings-content .admin-store-hours,
+.admin-settings-content .admin-five-am-reports,
+.admin-settings-content .admin-report-subscriptions {
+    overflow: hidden;
+    max-height: none;
+    flex: 1 1 0;
+    min-height: 0;
+    height: auto;
+}
+
+.admin-settings-content .admin-modal-actions,
+.admin-settings-content #admin-accounts-close,
+.admin-settings-content #admin-forecast-close,
+.admin-settings-content #admin-buildto-close,
+.admin-settings-content #admin-store-logins-close,
+.admin-settings-content #admin-smg-nsf-close {
+    display: none;
+}
+
+.admin-settings-content .admin-settings-scroll-body,
+.admin-settings-content .admin-buildto-table-wrap,
+.admin-settings-content #admin-forecast-body,
+.admin-settings-content #admin-accounts-body,
+.admin-settings-content #admin-accounts-create,
+.admin-settings-content #admin-smg-nsf-body,
+.admin-settings-content #admin-five-am-body,
+.admin-settings-content #admin-report-sub-matrix {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-bottom: 0;
+}
+
+.admin-settings-content .admin-modal > .admin-section-header,
+.admin-settings-content .admin-modal > h2,
+.admin-settings-content .admin-modal > .admin-accounts-meta,
+.admin-settings-content .admin-modal > .admin-accounts-browse-scope,
+.admin-settings-content .admin-modal > .admin-accounts-org-nav,
+.admin-settings-content .admin-modal > .admin-settings-segmented-tabs,
+.admin-settings-content .admin-modal > .admin-forecast-area-nav,
+.admin-settings-content .admin-modal > .admin-forecast-toolbar,
+.admin-settings-content .admin-modal > .admin-modal-toolbar,
+.admin-settings-content .admin-modal > .admin-store-logins-status,
+.admin-settings-content .admin-modal > .admin-modal-error {
+    flex-shrink: 0;
+}
+
+.admin-settings-content .admin-buildto-actions {
+    flex-shrink: 0;
+    padding-bottom: 0;
+}
+
+.admin-settings-content .admin-modal--build-to .admin-buildto-header,
+.admin-settings-content .admin-modal--build-to .admin-accounts-org-nav,
+.admin-settings-content .admin-modal--build-to .admin-buildto-toolbar,
+.admin-settings-content .admin-modal--build-to .admin-buildto-new-wrap,
+.admin-settings-content .admin-modal--build-to .admin-modal-error {
+    flex-shrink: 0;
+}
+
+.admin-settings-content .admin-modal--build-to .admin-accounts-org-nav {
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.admin-settings-content .admin-modal--build-to > .admin-modal-toolbar,
+.admin-settings-content .admin-modal--build-to > .admin-buildto-table-wrap,
+.admin-settings-content .admin-modal--build-to > .admin-buildto-new-wrap {
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.admin-section-header {
+    margin: 0 0 1.25rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.admin-section-header h2 {
+    margin: 0 0 0.35rem;
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    font-family: inherit;
+}
+
+.admin-section-subtitle {
+    margin: 0;
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    color: rgba(0, 0, 0, 0.55);
+    font-family: inherit;
+}
+
+.admin-accounts-view .admin-section-header h2 {
+    margin: 0 0 0.35rem;
+}
+
+.admin-accounts-org-nav {
+    margin-bottom: 1.25rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
+    background: rgba(122, 62, 177, 0.04);
+}
+
+.admin-accounts-empty-hint {
+    margin: 0;
+    color: rgba(0, 0, 0, 0.55);
+}
+
+.admin-accounts-create--standalone {
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+}
+
+.admin-accounts-body {
+    min-height: 2rem;
+}
+
+.admin-store-logins-view .admin-section-header h2 {
+    margin: 0 0 0.35rem;
+}
+
+.admin-store-logins-content {
+    min-height: 2rem;
+}
+
+.admin-store-logins-view .admin-store-logins-section h3 {
+    margin: 0 0 0.75rem;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.admin-store-logins-view .admin-store-logins-entry {
+    margin: 0 0 1rem;
+    padding: 0.75rem 0.85rem;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.65);
+}
+
+.admin-store-logins-view .admin-store-logins-status {
+    margin: 1rem 0 0;
+    font-size: 0.9375rem;
+    color: rgba(0, 0, 0, 0.65);
+}
+
+.admin-settings-content .admin-modal--store-logins,
+.admin-settings-content .admin-store-logins-view {
+    padding: 0;
+    background: transparent;
+    color: inherit;
+}
+
+html.mic-dark-mode .admin-store-logins-view .admin-store-logins-entry {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+html.mic-dark-mode .admin-store-logins-view .admin-store-logins-status {
+    color: rgba(255, 255, 255, 0.65);
+}
+
+html.mic-dark-mode .admin-section-header {
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+html.mic-dark-mode .admin-section-subtitle,
+html.mic-dark-mode .admin-accounts-empty-hint {
+    color: rgba(255, 255, 255, 0.55);
+}
+
+html.mic-dark-mode .admin-accounts-org-nav {
+    background: rgba(122, 62, 177, 0.12);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+@media (max-width: 820px) {
+    .admin-settings-header {
+        --admin-settings-header-pad-y: calc(12px * var(--dashboard-scale));
+        grid-template-columns: var(--admin-settings-header-control) minmax(0, 1fr) var(--admin-settings-header-control);
+        grid-template-rows: minmax(var(--admin-settings-header-control), auto);
+        align-items: center;
+        gap: 0.5rem 0.75rem;
+    }
+
+    .admin-settings-header__back {
+        grid-column: 3;
+        grid-row: 1;
+        justify-self: end;
+        align-self: center;
+        min-height: 0;
+        height: var(--admin-settings-header-control);
+    }
+
+    .admin-settings-header__menu {
+        grid-column: 1;
+        grid-row: 1;
+        justify-self: start;
+        align-self: center;
+    }
+
+    .admin-settings-title {
+        grid-column: 2;
+        grid-row: 1;
+        align-self: center;
+    }
+
+    body.admin-settings-page .admin-settings-header .nav-back-host,
+    body.admin-settings-page .admin-settings-header__back.nav-back-host {
+        position: static;
+        inset: auto;
+        top: auto;
+        left: auto;
+        right: auto;
+        pointer-events: auto;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        width: var(--admin-settings-header-control);
+        height: var(--admin-settings-header-control);
+        min-height: 0;
+    }
+
+    .admin-settings-nav-toggle {
+        display: inline-flex;
+        width: var(--admin-settings-header-control);
+        height: var(--admin-settings-header-control);
+        min-width: var(--admin-settings-header-control);
+        min-height: var(--admin-settings-header-control);
+        padding: 0;
+        border: none;
+        border-radius: 0;
+        background: transparent;
+        color: var(--white);
+        box-shadow: none;
+    }
+
+    .admin-settings-nav-toggle-icon {
+        width: 22px;
+        height: 22px;
+    }
+
+    .admin-settings-nav-toggle:hover {
+        background: color-mix(in srgb, var(--white) 12%, transparent);
+        box-shadow: none;
+        transform: none;
+    }
+
+    .admin-settings-nav-toggle:active {
+        transform: scale(0.96);
+    }
+
+    html.mic-dark-mode .admin-settings-nav-toggle {
+        background: transparent;
+        border: none;
+        color: var(--white);
+    }
+
+    html.mic-dark-mode .admin-settings-nav-toggle:hover {
+        background: color-mix(in srgb, var(--white) 12%, transparent);
+        border-color: transparent;
+    }
+
+    .admin-settings-nav-backdrop {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 120;
+        background: color-mix(in srgb, var(--charcoal) 45%, transparent);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+    }
+
+    .admin-settings-nav-backdrop.is-visible {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .admin-settings-sidebar-wrap {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 130;
+        width: min(280px, 85vw);
+        height: 100%;
+        height: 100dvh;
+        min-height: 100dvh;
+        padding-top: 0;
+        border-right: var(--cell-border) color-mix(in srgb, var(--charcoal) 15%, transparent);
+        box-shadow: 4px 0 24px color-mix(in srgb, var(--charcoal) 18%, transparent);
+        transform: translateX(-100%);
+        transition: transform 0.22s ease;
+    }
+
+    .admin-settings-sidebar-wrap.is-open {
+        transform: translateX(0);
+    }
+
+    .admin-settings-sidebar {
+        padding-top: 0;
+    }
+
+    body.admin-settings-nav-drawer-open {
+        overflow: hidden;
+    }
+
+    .admin-settings-main {
+        padding: 1rem 1rem 0;
+    }
+}
+
+html.mic-dark-mode .admin-settings-sidebar-wrap {
+    background: #1e1e24;
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+html.mic-dark-mode .admin-settings-sidebar-footer {
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+html.mic-dark-mode .admin-settings-sign-out {
+    border-color: rgba(255, 255, 255, 0.15);
+    color: #f2f2f2;
+}
+
+html.mic-dark-mode .admin-settings-sign-out:hover {
+    border-color: rgba(231, 76, 60, 0.55);
+    background: rgba(231, 76, 60, 0.15);
+    color: #ff8a7a;
+}
+
+html.mic-dark-mode .admin-settings-sidebar {
+    background: transparent;
+}
+
+html.mic-dark-mode .admin-settings-nav-group-toggle {
+    background: color-mix(in srgb, var(--white) 4%, #1e1e24);
+    border-color: rgba(255, 255, 255, 0.08);
+    color: #f2f2f2;
+}
+
+html.mic-dark-mode .admin-settings-nav-group-toggle:hover,
+html.mic-dark-mode .admin-settings-nav-group.is-active > .admin-settings-nav-group-toggle {
+    background: rgba(122, 62, 177, 0.22);
+    color: #fff;
+}
+
+html.mic-dark-mode .admin-settings-nav-item,
+html.mic-dark-mode .admin-settings-nav-parent-toggle {
+    color: #f2f2f2;
+}
+
+html.mic-dark-mode .admin-settings-nav-item:hover,
+html.mic-dark-mode .admin-settings-nav-parent-toggle:hover {
+    background: rgba(122, 62, 177, 0.18);
+}
+
+html.mic-dark-mode .admin-settings-nav-item.is-active {
+    background: rgba(122, 62, 177, 0.28);
+    color: #fff;
+}
+
+html.mic-dark-mode .admin-settings-nav-toggle {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.18);
+    color: #f2f2f2;
+}
+
+html.mic-dark-mode .admin-settings-nav-toggle:hover {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.28);
+}
+
+html.mic-dark-mode body.admin-settings-page {
+    background: #141418;
+    color: #f2f2f2;
+    color-scheme: dark;
+}
+
+html.mic-dark-mode .admin-settings-main {
+    background: #141418;
+}
+
+html.mic-dark-mode .admin-settings-header {
+    background: #1a1a1f;
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+html.mic-dark-mode .admin-settings-title {
+    color: #f2f2f2;
+}
+
+html.mic-dark-mode .admin-settings-loading,
+html.mic-dark-mode .admin-settings-empty {
+    color: rgba(255, 255, 255, 0.55);
+}
+
+.admin-menu-panel .admin-menu-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.admin-menu-footer {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.admin-menu-panel h2 {
+    margin: 0 0 0.75rem;
+}
+
+.admin-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 12000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.45);
+}
+
+.admin-modal-backdrop[hidden] {
+    display: none !important;
+}
+
+.admin-modal {
+    width: min(960px, 100%);
+    max-height: min(90vh, 820px);
+    overflow: auto;
+    background: #fff;
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+}
+
+.admin-modal--wide {
+    width: min(1080px, 100%);
+}
+
+.admin-modal--build-to {
+    --admin-buildto-pad-left: 3rem;
+    --admin-buildto-pad-right: 1.5rem;
+    --admin-buildto-pad-top: 2.75rem;
+    --admin-buildto-radius: 0;
+    --admin-buildto-control-radius: 0;
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    max-height: min(90vh, 820px);
+    border-radius: var(--admin-buildto-radius);
+    position: relative;
+}
+
+.admin-buildto-confirm-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.25rem;
+    box-sizing: border-box;
+    background: rgba(18, 18, 22, 0.45);
+}
+
+.admin-buildto-confirm-backdrop[hidden] {
+    display: none !important;
+}
+
+.admin-buildto-confirm {
+    width: min(100%, 420px);
+    padding: 1.25rem 1.35rem;
+    border-radius: var(--admin-buildto-control-radius, 8px);
+    background: #fff;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.22);
+    box-sizing: border-box;
+}
+
+.admin-buildto-confirm h3 {
+    margin: 0 0 0.65rem;
+    font-size: 1.05rem;
+    line-height: 1.3;
+}
+
+.admin-buildto-confirm p {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.45;
+    color: rgba(0, 0, 0, 0.72);
+}
+
+.admin-buildto-confirm-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 1.1rem;
+}
+
+.admin-buildto-confirm-ok--danger {
+    background: #b42318 !important;
+    border-color: #b42318 !important;
+}
+
+.admin-buildto-confirm-ok--danger:hover {
+    background: #912018 !important;
+    border-color: #912018 !important;
+}
+
+html.mic-rounded-corners .admin-modal--build-to {
+    --admin-buildto-radius: 12px;
+    --admin-buildto-control-radius: 8px;
+}
+
+.admin-buildto-header {
+    padding: var(--admin-buildto-pad-top) var(--admin-buildto-pad-right) 0.75rem var(--admin-buildto-pad-left);
+    background: linear-gradient(135deg, rgba(122, 62, 177, 0.08) 0%, rgba(122, 62, 177, 0.02) 100%);
+    border-bottom: 1px solid rgba(122, 62, 177, 0.12);
+}
+
+.admin-buildto-header-main {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.admin-buildto-header-text {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.admin-buildto-header h2 {
+    margin: 0;
+    padding-left: 0.35rem;
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: #2a2a32;
+}
+
+.admin-buildto-subtitle {
+    margin: 0.35rem 0 0;
+    padding-left: 0.35rem;
+    font-size: 0.875rem;
+    color: rgba(0, 0, 0, 0.55);
+    line-height: 1.4;
+}
+
+.admin-buildto-header-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+    flex: 0 0 auto;
+    align-self: center;
+}
+
+.admin-buildto-header-actions--configure {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.admin-buildto-header-icon-btn {
+    width: auto;
+    min-width: 0;
+    height: auto;
+    min-height: 0;
+    padding: 0.15rem;
+    align-self: center;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: rgba(42, 42, 50, 0.72);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.admin-buildto-header-icon-btn:hover {
+    background: transparent !important;
+    border: none !important;
+    color: #7a3eb1;
+}
+
+.admin-buildto-header-icon-btn:focus-visible {
+    outline: 2px solid rgba(122, 62, 177, 0.45);
+    outline-offset: 3px;
+}
+
+.admin-buildto-icon {
+    width: 2rem;
+    height: 2rem;
+    display: block;
+}
+
+.admin-buildto-mode-toggle {
+    box-sizing: border-box;
+    flex: 0 0 auto;
+    border-radius: var(--admin-buildto-control-radius);
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.admin-buildto-copy-vendor {
+    display: none !important;
+}
+
+.admin-buildto-add {
+    display: none !important;
+}
+
+.admin-buildto-header-actions--configure .admin-buildto-copy-vendor:not([hidden]) {
+    display: flex !important;
+}
+
+.admin-buildto-header-actions--configure .admin-buildto-add:not([hidden]) {
+    display: flex !important;
+}
+
+.admin-buildto-copy-mode {
+    grid-column: 1 / -1;
+    margin: 0;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: var(--admin-buildto-control-radius);
+}
+
+.admin-buildto-copy-mode legend {
+    padding: 0 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #5a5a66;
+}
+
+.admin-buildto-copy-mode-option {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.875rem;
+    margin-top: 0.35rem;
+}
+
+.admin-buildto-copy-new-name[hidden] {
+    display: none;
+}
+
+.admin-buildto-copy-panel {
+    grid-column: 1 / -1;
+    display: grid;
+    gap: 0.75rem;
+}
+
+.admin-buildto-copy-panel[hidden] {
+    display: none;
+}
+
+.admin-buildto-copy .admin-buildto-new-grid {
+    grid-template-columns: 1fr;
+}
+
+.admin-buildto-copy-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+}
+
+.admin-buildto-copy-actions > .mic-settings-btn,
+.admin-buildto-copy-actions > .admin-buildto-close-btn {
+    width: 100%;
+    box-sizing: border-box;
+    min-height: var(--admin-buildto-toolbar-control-height, 2.75rem);
+    justify-content: center;
+    text-align: center;
+}
+
+.admin-buildto-vendor-filter-wrap {
+    flex: 0 0 auto;
+}
+
+.admin-buildto-vendor-filter-label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #5a5a66;
+}
+
+.admin-buildto-vendor-filter-row {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.admin-buildto-vendor-filter-row .admin-buildto-type-select {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.admin-buildto-vendor-remove {
+    flex: 0 0 auto;
+}
+
+.admin-buildto-vendor-remove:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.admin-buildto-vendor-remove:not(:disabled):hover {
+    color: #b42318;
+}
+
+html.mic-dark-mode .admin-buildto-vendor-remove:not(:disabled):hover {
+    color: #f87171;
+}
+
+.admin-buildto-table--configure {
+    table-layout: fixed;
+    width: 0;
+}
+
+.admin-buildto-table--configure thead th {
+    white-space: nowrap;
+}
+
+.admin-buildto-table--configure thead th.admin-buildto-col-header {
+    position: relative;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.admin-buildto-col-resize {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 8px;
+    height: 100%;
+    cursor: col-resize;
+    user-select: none;
+    touch-action: none;
+}
+
+.admin-buildto-col-resize:hover,
+body.admin-buildto-col-resizing .admin-buildto-col-resize {
+    background: rgba(122, 62, 177, 0.28);
+}
+
+body.admin-buildto-col-resizing {
+    cursor: col-resize;
+    user-select: none;
+}
+
+.admin-buildto-table--configure td {
+    overflow: hidden;
+    vertical-align: middle;
+}
+
+.admin-buildto-table--configure .admin-buildto-name-input,
+.admin-buildto-table--configure .admin-buildto-code-input,
+.admin-buildto-table--configure .admin-buildto-fallback-input,
+.admin-buildto-table--configure .admin-buildto-type-select {
+    max-width: 100%;
+    min-width: 0;
+}
+
+.admin-buildto-unit-select--off {
+    opacity: 0.45;
+}
+
+.admin-buildto-table--configure .admin-table-check {
+    text-align: center;
+    vertical-align: middle;
+}
+
+.admin-buildto-col-delete-header {
+    width: 44px;
+    min-width: 44px;
+    padding: 0;
+}
+
+.admin-buildto-delete-cell {
+    width: 44px;
+    min-width: 44px;
+    padding: 0;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.admin-buildto-delete-item {
+    margin: 0 auto;
+}
+
+.admin-buildto-delete-item:hover {
+    color: #b42318;
+}
+
+.admin-buildto-icon--sm {
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+.admin-modal--build-to .admin-accounts-org-nav {
+    margin-left: var(--admin-buildto-pad-left);
+    margin-right: var(--admin-buildto-pad-right);
+    margin-top: 0.75rem;
+}
+
+.admin-modal--build-to > .admin-modal-toolbar,
+.admin-modal--build-to > .admin-buildto-table-wrap,
+.admin-modal--build-to > .admin-modal-error,
+.admin-modal--build-to > .admin-modal-actions,
+.admin-modal--build-to > .admin-buildto-actions {
+    padding-left: var(--admin-buildto-pad-left);
+    padding-right: var(--admin-buildto-pad-right);
+}
+
+.admin-modal--build-to > .admin-buildto-toolbar {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    flex-wrap: nowrap;
+    gap: 0.75rem;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0.85rem 0 0.75rem;
+    padding-bottom: 0.85rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    --admin-buildto-toolbar-control-height: 2.75rem;
+}
+
+.admin-buildto-store-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: rgba(0, 0, 0, 0.62);
+}
+
+.admin-buildto-store-field select {
+    min-width: 14rem;
+    padding: 0.5rem 0.65rem;
+    border: 1px solid rgba(0, 0, 0, 0.14);
+    border-radius: var(--admin-buildto-control-radius);
+    background: #fff;
+    font: inherit;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.admin-buildto-store-field select:focus {
+    outline: none;
+    border-color: #7a3eb1;
+    box-shadow: 0 0 0 3px rgba(122, 62, 177, 0.15);
+}
+
+.admin-modal--build-to .admin-buildto-search-wrap {
+    width: 100%;
+    min-width: 0;
+}
+
+.admin-buildto-search-wrap input[type='search'] {
+    width: 100%;
+    box-sizing: border-box;
+    min-height: var(--admin-buildto-toolbar-control-height, 2.75rem);
+    padding: 0.55rem 0.75rem 0.55rem 2.1rem;
+    border: 1px solid rgba(0, 0, 0, 0.14);
+    border-radius: var(--admin-buildto-control-radius);
+    background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") 0.65rem center no-repeat;
+    font: inherit;
+    line-height: 1.25;
+    appearance: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.admin-buildto-search-wrap input[type='search']:focus {
+    outline: none;
+    border-color: #7a3eb1;
+    box-shadow: 0 0 0 3px rgba(122, 62, 177, 0.15);
+}
+
+.admin-modal--build-to .admin-buildto-save {
+    width: 100%;
+    box-sizing: border-box;
+    min-height: var(--admin-buildto-toolbar-control-height, 2.75rem);
+    padding: 0.55rem 1.25rem;
+    border-radius: var(--admin-buildto-control-radius);
+    font: inherit;
+    font-weight: 600;
+    line-height: 1.25;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.admin-modal--build-to .mic-settings-btn {
+    border-radius: var(--admin-buildto-control-radius);
+}
+
+.admin-modal--build-to .mic-settings-btn.admin-buildto-header-icon-btn {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+.admin-buildto-new-wrap {
+    padding-left: var(--admin-buildto-pad-left);
+    padding-right: var(--admin-buildto-pad-right);
+    margin-bottom: 0.75rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.admin-buildto-new {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid rgba(122, 62, 177, 0.35);
+    border-radius: var(--admin-buildto-control-radius);
+    background: rgba(122, 62, 177, 0.04);
+    padding: 1rem 1.1rem;
+    color-scheme: light;
+}
+
+.admin-buildto-new h3 {
+    margin: 0 0 0.75rem;
+    font-size: 1rem;
+}
+
+.admin-buildto-new-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+    gap: 0.6rem 0.85rem;
+}
+
+.admin-buildto-new-grid label,
+.admin-buildto-new-locrow .admin-buildto-new-label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: rgba(0, 0, 0, 0.62);
+}
+
+.admin-buildto-new-grid label.admin-buildto-group--off {
+    display: none;
+}
+
+.admin-buildto-new-grid input,
+.admin-buildto-new-grid select {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.admin-buildto-new-optional {
+    font-weight: 400;
+    color: rgba(0, 0, 0, 0.4);
+}
+
+.admin-buildto-new-locrow {
+    margin-top: 0.85rem;
+}
+
+.admin-buildto-new-locs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 0.9rem;
+    margin-top: 0.35rem;
+}
+
+.admin-buildto-new-loc {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.75);
+}
+
+.admin-buildto-new-locs [data-new-item='newLocation'] {
+    max-width: 11rem;
+}
+
+.admin-buildto-new-flags {
+    display: flex;
+    gap: 1.25rem;
+    margin-top: 0.75rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.75);
+}
+
+.admin-buildto-new-flags label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.admin-buildto-new-error {
+    margin: 0.6rem 0 0;
+}
+
+.admin-buildto-new-error:empty {
+    display: none;
+}
+
+.admin-buildto-new-actions {
+    display: flex;
+    gap: 0.6rem;
+    margin-top: 0.85rem;
+}
+
+.admin-buildto-new-actions .mic-settings-btn,
+.admin-buildto-new-actions .admin-buildto-close-btn {
+    min-height: 2.5rem;
+    padding: 0.45rem 1.4rem;
+    border-radius: var(--admin-buildto-control-radius);
+}
+
+.admin-buildto-table-wrap {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    margin-bottom: 0.5rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    background: #fafafa;
+    color-scheme: light;
+}
+
+.admin-buildto-table-wrap > p {
+    padding: 1.5rem 0;
+    margin: 0;
+    color: rgba(0, 0, 0, 0.55);
+    text-align: center;
+}
+
+.admin-buildto-table {
+    margin: 0;
+    background: #fff;
+}
+
+.admin-buildto-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+.admin-buildto-table thead th {
+    background: #f3f0f7;
+    color: #4a3d5c;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.65rem 0.5rem;
+    border-bottom: 2px solid rgba(122, 62, 177, 0.15);
+    white-space: nowrap;
+}
+
+.admin-buildto-table thead th:first-child,
+.admin-buildto-table .admin-buildto-item-cell {
+    padding-left: 1rem;
+}
+
+.admin-buildto-table tbody tr {
+    transition: background-color 0.12s ease;
+}
+
+.admin-buildto-table tbody tr:hover {
+    background: rgba(122, 62, 177, 0.04);
+}
+
+.admin-buildto-table tbody tr:nth-child(even) {
+    background: rgba(0, 0, 0, 0.015);
+}
+
+.admin-buildto-table tbody tr:nth-child(even):hover {
+    background: rgba(122, 62, 177, 0.05);
+}
+
+.admin-buildto-item-cell {
+    min-width: 11rem;
+    max-width: 16rem;
+    font-weight: 500;
+    line-height: 1.35;
+}
+
+.admin-buildto-item-cell .admin-accounts-meta {
+    display: block;
+    margin-top: 0.15rem;
+    font-size: 0.78rem;
+    font-weight: 400;
+    color: rgba(0, 0, 0, 0.45);
+}
+
+.admin-buildto-vendor-cell {
+    color: rgba(0, 0, 0, 0.65);
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+.admin-buildto-num-input {
+    width: 3.5rem;
+    padding: 0.35rem 0.4rem;
+    border: 1px solid rgba(0, 0, 0, 0.14);
+    border-radius: var(--admin-buildto-control-radius);
+    background: #fff;
+    color: #1a1a1a;
+    font: inherit;
+    font-size: 0.85rem;
+    text-align: center;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.admin-buildto-num-input:focus {
+    outline: none;
+    border-color: #7a3eb1;
+    box-shadow: 0 0 0 2px rgba(122, 62, 177, 0.15);
+}
+
+.admin-buildto-code-input {
+    width: 5.5rem;
+    padding: 0.35rem 0.45rem;
+    border: 1px solid rgba(0, 0, 0, 0.14);
+    border-radius: var(--admin-buildto-control-radius);
+    background: #fff;
+    color: #1a1a1a;
+    font: inherit;
+    font-size: 0.82rem;
+}
+
+.admin-buildto-fallback-input {
+    width: 10rem;
+    min-width: 8rem;
+    padding: 0.35rem 0.45rem;
+    border: 1px solid rgba(0, 0, 0, 0.14);
+    border-radius: var(--admin-buildto-control-radius);
+    background: #fff;
+    color: #1a1a1a;
+    font: inherit;
+    font-size: 0.82rem;
+}
+
+.admin-buildto-name-input {
+    width: 100%;
+    min-width: 8rem;
+    box-sizing: border-box;
+}
+
+.admin-buildto-code-input:focus,
+.admin-buildto-fallback-input:focus {
+    outline: none;
+    border-color: #7a3eb1;
+    box-shadow: 0 0 0 2px rgba(122, 62, 177, 0.15);
+}
+
+.admin-buildto-code-input--locked,
+.admin-buildto-fallback-input.admin-buildto-code-input--locked {
+    background: #f4f4f6;
+    color: rgba(0, 0, 0, 0.72);
+    cursor: not-allowed;
+}
+
+.admin-buildto-code-input--locked:focus,
+.admin-buildto-fallback-input.admin-buildto-code-input--locked:focus {
+    border-color: rgba(0, 0, 0, 0.14);
+    box-shadow: none;
+}
+
+.admin-buildto-warn-cell {
+    min-width: 4rem;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.admin-buildto-table thead th:last-child,
+.admin-buildto-warn-cell {
+    position: sticky;
+    right: 0;
+    z-index: 1;
+    background: #fff;
+    box-shadow: -6px 0 10px rgba(0, 0, 0, 0.06);
+}
+
+.admin-buildto-table thead th:last-child {
+    z-index: 3;
+    background: #f3f0f7;
+}
+
+.admin-buildto-warn-input {
+    width: 3.25rem;
+    min-width: 3.25rem;
+    font-weight: 600;
+    color: #5c2d91;
+    border-color: rgba(122, 62, 177, 0.35);
+    background: #faf7fd;
+}
+
+.admin-buildto-table tbody tr:nth-child(even) .admin-buildto-warn-cell {
+    background: #fafafa;
+}
+
+.admin-buildto-table tbody tr:hover .admin-buildto-warn-cell {
+    background: rgba(122, 62, 177, 0.04);
+}
+
+.admin-buildto-table tbody tr:nth-child(even):hover .admin-buildto-warn-cell {
+    background: rgba(122, 62, 177, 0.05);
+}
+
+.admin-buildto-actions {
+    padding-top: 0.5rem;
+    padding-bottom: 1.25rem;
+    margin-top: 0;
+}
+
+.admin-buildto-close-btn {
+    padding: 0.45rem 1rem;
+    border: 1px solid rgba(0, 0, 0, 0.14);
+    border-radius: var(--admin-buildto-control-radius);
+    background: #fff;
+    font: inherit;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.admin-buildto-close-btn:hover {
+    background: #f5f5f5;
+    border-color: rgba(0, 0, 0, 0.22);
+}
+
+.admin-modal h2 {
+    margin: 0 0 1rem;
+    font-size: 1.25rem;
+}
+
+.admin-modal-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.admin-modal-toolbar select {
+    min-width: 12rem;
+}
+
+.admin-modal-error {
+    color: #b00020;
+    margin: 0.5rem 0 0;
+}
+
+.admin-modal-success {
+    color: #0d7a3b;
+    margin: 0.5rem 0 0;
+}
+
+.admin-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.admin-modal-actions--split {
+    justify-content: space-between;
+}
+
+.admin-btn-primary {
+    background: #7a3eb1;
+    border-color: #7a3eb1;
+    color: #fff;
+}
+
+.admin-btn-primary:hover:not(:disabled) {
+    filter: brightness(1.05);
+}
+
+.admin-btn-primary:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+html.mic-dark-mode .admin-btn-primary {
+    background: #9b59d0;
+    border-color: #9b59d0;
+    color: #fff;
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.admin-table th,
+.admin-table td {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    padding: 0.45rem 0.5rem;
+    text-align: left;
+    vertical-align: top;
+}
+
+.admin-table th {
+    font-weight: 600;
+}
+
+.admin-table-check {
+    text-align: center;
+    vertical-align: middle;
+}
+
+.admin-table-check input[type='checkbox'] {
+    width: 1rem;
+    height: 1rem;
+    cursor: pointer;
+}
+
+.admin-buildto-type-select {
+    min-width: 6.5rem;
+    max-width: 100%;
+    font-size: 0.85rem;
+    padding: 0.35rem 0.45rem;
+    border: 1px solid rgba(0, 0, 0, 0.14);
+    border-radius: var(--admin-buildto-control-radius);
+    background: #fff;
+    color: #1a1a1a;
+    color-scheme: light;
+    cursor: pointer;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.admin-buildto-type-select option {
+    color: #1a1a1a;
+    background-color: #fff;
+}
+
+.admin-buildto-type-select:focus {
+    outline: none;
+    border-color: #7a3eb1;
+    box-shadow: 0 0 0 2px rgba(122, 62, 177, 0.15);
+}
+
+.admin-table td[data-buildto-group].admin-buildto-group--off {
+    pointer-events: none;
+}
+
+.admin-table td[data-buildto-group].admin-buildto-group--off input,
+.admin-table td[data-buildto-group].admin-buildto-group--off select {
+    visibility: hidden;
+}
+
+.admin-status-dot {
+    display: inline-block;
+    width: 0.85rem;
+    height: 0.85rem;
+    border-radius: 50%;
+    vertical-align: middle;
+}
+
+.admin-status-dot--ok {
+    background: #2e7d32;
+}
+
+.admin-status-dot--bad {
+    background: #c62828;
+}
+
+.admin-status-dot--pending {
+    background: #f9a825;
+}
+
+.admin-forecast-status-table {
+    table-layout: fixed;
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.admin-forecast-status-table.admin-table td.admin-forecast-status-cell {
+    padding: 0;
+    vertical-align: top;
+}
+
+.admin-forecast-status-table .admin-forecast-status-col {
+    text-align: center;
+    vertical-align: bottom;
+}
+
+.admin-forecast-status-table th:last-child,
+.admin-forecast-status-table .admin-forecast-actions {
+    text-align: center;
+}
+
+.admin-forecast-status-cell {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 0;
+    vertical-align: top;
+    text-align: center;
+    overflow: hidden;
+}
+
+.admin-forecast-status-cell-inner {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    min-height: 4.55rem;
+    box-sizing: border-box;
+    padding-bottom: 0.5rem;
+}
+
+.admin-forecast-status-cell-content {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.05rem;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    padding: 0.28rem 0.2rem 0.1rem;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.admin-forecast-status-label {
+    font-weight: 600;
+    font-size: 0.82rem;
+    line-height: 1.15;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-forecast-status-cell .admin-accounts-meta {
+    display: block;
+    text-align: center;
+    font-size: 0.68rem;
+    line-height: 1.15;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.admin-forecast-status-backfill-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.05rem;
+    width: 100%;
+    min-height: 100%;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    text-align: center;
+}
+
+.admin-forecast-status-backfill-btn:focus-visible {
+    outline: 2px solid rgba(103, 58, 183, 0.55);
+    outline-offset: -2px;
+}
+
+.admin-forecast-status-backfill-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
+}
+
+.admin-forecast-status-refresh-btn {
+    display: block;
+    width: 100%;
+    margin: 0.15rem 0 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    text-align: center;
+}
+
+.admin-forecast-status-refresh-btn:focus-visible {
+    outline: 2px solid rgba(103, 58, 183, 0.55);
+    outline-offset: -2px;
+}
+
+.admin-forecast-status-bar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: block;
+    width: 100%;
+    height: 0.5rem;
+    margin: 0;
+    border-radius: 0;
+    pointer-events: none;
+}
+
+.admin-forecast-status-cell--ok {
+    background: color-mix(in srgb, #2e7d32 7%, transparent);
+}
+
+.admin-forecast-status-cell--ok .admin-forecast-status-bar {
+    background: #2e7d32;
+}
+
+.admin-forecast-status-cell--bad {
+    background: color-mix(in srgb, #c62828 7%, transparent);
+}
+
+.admin-forecast-status-cell--bad .admin-forecast-status-bar {
+    background: #c62828;
+}
+
+.admin-forecast-status-cell--partial {
+    background: color-mix(in srgb, #f9a825 10%, transparent);
+}
+
+.admin-forecast-status-cell--partial .admin-forecast-status-bar {
+    background: #f9a825;
+}
+
+html.mic-dark-mode .admin-forecast-status-cell--ok {
+    background: color-mix(in srgb, #66bb6a 14%, transparent);
+}
+
+html.mic-dark-mode .admin-forecast-status-cell--ok .admin-forecast-status-bar {
+    background: #66bb6a;
+}
+
+html.mic-dark-mode .admin-forecast-status-cell--bad {
+    background: color-mix(in srgb, #ef5350 14%, transparent);
+}
+
+html.mic-dark-mode .admin-forecast-status-cell--bad .admin-forecast-status-bar {
+    background: #ef5350;
+}
+
+html.mic-dark-mode .admin-forecast-status-cell--partial {
+    background: color-mix(in srgb, #ffb74d 16%, transparent);
+}
+
+html.mic-dark-mode .admin-forecast-status-cell--partial .admin-forecast-status-bar {
+    background: #ffb74d;
+}
+
+.admin-accounts-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.admin-accounts-list li {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.65rem 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.admin-accounts-list li .mic-settings-btn {
+    text-align: center;
+}
+
+.admin-accounts-meta {
+    display: block;
+    font-size: 0.875rem;
+    line-height: 1.45;
+    color: rgba(0, 0, 0, 0.55);
+    font-family: inherit;
+}
+
+.admin-accounts-existing {
+    margin-top: 1.25rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.admin-accounts-existing h3 {
+    margin: 0 0 0.75rem;
+    font-size: 1rem;
+}
+
+html.mic-dark-mode .admin-accounts-existing {
+    border-top-color: rgba(255, 255, 255, 0.12);
+}
+
+.admin-accounts-create-toggle {
+    width: 100%;
+    margin: 1rem 0 0;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.admin-accounts-create-toggle.is-expanded {
+    margin-bottom: 0.65rem;
+}
+
+.admin-accounts-create-toggle-icon {
+    font-size: 0.75rem;
+    line-height: 1;
+    opacity: 0.85;
+}
+
+.admin-accounts-existing {
+    margin-bottom: 0;
+}
+
+.admin-accounts-create {
+    margin-bottom: 1rem;
+    padding: 1rem;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    background: rgba(122, 62, 177, 0.04);
+}
+
+.admin-accounts-create h3 {
+    margin: 0 0 0.75rem;
+    font-size: 1rem;
+}
+
+.admin-accounts-form-grid {
+    display: grid;
+    gap: 0.85rem;
+}
+
+.admin-accounts-form-grid > .admin-accounts-field {
+    grid-column: 1 / -1;
+}
+
+.admin-accounts-field {
+    display: grid;
+    gap: 0.35rem;
+    width: 100%;
+    min-width: 0;
+}
+
+.admin-accounts-field > span,
+.admin-accounts-field > label {
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: rgba(0, 0, 0, 0.65);
+}
+
+.admin-accounts-field input[type='text'],
+.admin-accounts-field input[type='password'],
+.admin-accounts-field input[type='email'] {
+    font: inherit;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.55rem 0.65rem;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 6px;
+}
+
+.admin-accounts-field select {
+    font: inherit;
+    padding: 0.55rem 0.65rem;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 6px;
+    width: 100%;
+    background: #fff;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23666' d='M1.4.6 6 5.2 10.6.6 12 2l-6 6-6-6z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.65rem center;
+    padding-right: 2rem;
+}
+
+.admin-accounts-field select:disabled {
+    opacity: 0.72;
+    cursor: default;
+    background-color: rgba(0, 0, 0, 0.03);
+}
+
+.admin-accounts-field input.is-field-invalid,
+.admin-accounts-field select.is-field-invalid {
+    border-color: #c62828;
+    box-shadow: 0 0 0 2px rgba(198, 40, 40, 0.15);
+}
+
+.create-account-field-error {
+    margin: 0;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #c62828;
+}
+
+.admin-accounts-level-bar {
+    display: flex;
+    width: 100%;
+    gap: 0;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.admin-accounts-level-btn {
+    position: relative;
+    box-sizing: border-box;
+    flex: 1 1 0;
+    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.55rem 0.5rem;
+    border: none;
+    border-right: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 0;
+    background: #fff;
+    cursor: pointer;
+    font-size: 0.88rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.admin-accounts-level-btn:last-child {
+    border-right: none;
+}
+
+.admin-accounts-level-btn input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.admin-accounts-level-btn:has(input:checked),
+.admin-accounts-scope-chip.is-active,
+.admin-accounts-scope-chip:has(input:checked) {
+    background: rgba(122, 62, 177, 0.12);
+    box-shadow: none;
+}
+
+.admin-accounts-level-btn:has(input:checked)::after,
+.admin-accounts-scope-chip.is-active::after,
+.admin-accounts-scope-chip:has(input:checked)::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    background: #7a3eb1;
+}
+
+.admin-accounts-scope-stack,
+.admin-accounts-browse-scope {
+    display: grid;
+    gap: 0.65rem;
+}
+
+.admin-accounts-scope-row-wrap {
+    display: grid;
+    gap: 0.35rem;
+    width: 100%;
+}
+
+.admin-accounts-scope-row-label {
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: rgba(0, 0, 0, 0.65);
+}
+
+.admin-accounts-scope-row {
+    width: 100%;
+    gap: 0;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.admin-accounts-scope-row--equal {
+    display: grid;
+    grid-template-columns: repeat(var(--scope-cols, 1), minmax(0, 1fr));
+}
+
+.admin-accounts-scope-chip {
+    position: relative;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-width: 0;
+    padding: 0.5rem 0.35rem;
+    border: none;
+    border-right: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 0;
+    background: #fff;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.88rem;
+    font-weight: 600;
+    text-align: center;
+    color: inherit;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    user-select: none;
+}
+
+.admin-accounts-scope-row .admin-accounts-scope-chip:last-child {
+    border-right: none;
+}
+
+.admin-accounts-scope-chip input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.admin-accounts-scope-section {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.admin-accounts-scope-section > span {
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: rgba(0, 0, 0, 0.65);
+}
+
+.admin-accounts-choice-group {
+    display: grid;
+    gap: 0.45rem;
+    max-height: 180px;
+    overflow: auto;
+}
+
+.admin-accounts-choice {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.55rem;
+    padding: 0.55rem 0.65rem;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+}
+
+.admin-accounts-choice:has(input:checked) {
+    border-color: #7a3eb1;
+    box-shadow: 0 0 0 1px rgba(122, 62, 177, 0.25);
+}
+
+.admin-accounts-choice input {
+    margin-top: 0.15rem;
+    accent-color: #7a3eb1;
+}
+
+.admin-accounts-create-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.85rem;
+}
+
+.admin-accounts-temp-password {
+    margin: 0.75rem 0 0;
+    padding: 0.75rem;
+    border-radius: 8px;
+    background: rgba(122, 62, 177, 0.08);
+    border: 1px solid rgba(122, 62, 177, 0.25);
+}
+
+.admin-accounts-temp-password code {
+    display: block;
+    margin-top: 0.35rem;
+    font-size: 1rem;
+    user-select: all;
+}
+
+html.mic-dark-mode .admin-accounts-create {
+    background: rgba(122, 62, 177, 0.12);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+html.mic-dark-mode .admin-accounts-field > span,
+html.mic-dark-mode .admin-accounts-field > label {
+    color: rgba(255, 255, 255, 0.72);
+}
+
+html.mic-dark-mode .admin-accounts-field input[type='text'],
+html.mic-dark-mode .admin-accounts-field input[type='password'],
+html.mic-dark-mode .admin-accounts-field input[type='email'],
+html.mic-dark-mode .admin-accounts-choice,
+html.mic-dark-mode .admin-accounts-level-btn,
+html.mic-dark-mode .admin-accounts-scope-chip {
+    background: #2a2a32;
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #f2f2f2;
+}
+
+html.mic-dark-mode .admin-accounts-level-btn:has(input:checked),
+html.mic-dark-mode .admin-accounts-scope-chip.is-active,
+html.mic-dark-mode .admin-accounts-scope-chip:has(input:checked) {
+    background: rgba(122, 62, 177, 0.28);
+}
+
+html.mic-dark-mode .admin-accounts-level-btn:has(input:checked)::after,
+html.mic-dark-mode .admin-accounts-scope-chip.is-active::after,
+html.mic-dark-mode .admin-accounts-scope-chip:has(input:checked)::after {
+    background: rgba(186, 132, 255, 0.95);
+}
+
+html.mic-dark-mode .admin-accounts-scope-section > span,
+html.mic-dark-mode .admin-accounts-scope-row-label {
+    color: rgba(255, 255, 255, 0.72);
+}
+
+html.mic-dark-mode .admin-accounts-meta {
+    color: rgba(255, 255, 255, 0.55);
+}
+
+.admin-tabs {
+    margin-bottom: 0.75rem;
+}
+
+html.mic-dark-mode .admin-modal {
+    background: #1e1e24;
+    color: #f2f2f2;
+}
+
+html.mic-dark-mode .admin-table th,
+html.mic-dark-mode .admin-table td,
+html.mic-dark-mode .admin-accounts-list li {
+    border-bottom-color: rgba(255, 255, 255, 0.12);
+}
+
+html.mic-dark-mode .admin-buildto-header {
+    background: linear-gradient(135deg, rgba(155, 89, 208, 0.14) 0%, rgba(155, 89, 208, 0.04) 100%);
+    border-bottom-color: rgba(155, 89, 208, 0.2);
+}
+
+html.mic-dark-mode .admin-buildto-header h2 {
+    color: #f2f2f2;
+}
+
+html.mic-dark-mode .admin-buildto-subtitle {
+    color: rgba(255, 255, 255, 0.55);
+}
+
+html.mic-dark-mode .admin-buildto-vendor-filter-label {
+    color: rgba(255, 255, 255, 0.65);
+}
+
+html.mic-dark-mode .admin-buildto-header-icon-btn {
+    background: transparent !important;
+    border: none !important;
+    color: rgba(255, 255, 255, 0.78);
+}
+
+html.mic-dark-mode .admin-buildto-header-icon-btn:hover {
+    background: transparent !important;
+    color: #c9a8e8;
+}
+
+html.mic-dark-mode .admin-buildto-delete-item:hover {
+    color: #f87171;
+}
+
+html.mic-dark-mode .admin-buildto-confirm {
+    background: #1a1a1f;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+
+html.mic-dark-mode .admin-buildto-confirm h3 {
+    color: rgba(255, 255, 255, 0.92);
+}
+
+html.mic-dark-mode .admin-buildto-confirm p {
+    color: rgba(255, 255, 255, 0.72);
+}
+
+html.mic-dark-mode .admin-buildto-copy-mode {
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+html.mic-dark-mode .admin-buildto-copy-mode legend {
+    color: rgba(255, 255, 255, 0.65);
+}
+
+html.mic-dark-mode .admin-buildto-toolbar {
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+html.mic-dark-mode .admin-buildto-store-field {
+    color: rgba(255, 255, 255, 0.65);
+}
+
+html.mic-dark-mode .admin-buildto-store-field select,
+html.mic-dark-mode .admin-buildto-search-wrap input[type='search'],
+html.mic-dark-mode .admin-buildto-num-input,
+html.mic-dark-mode .admin-buildto-code-input,
+html.mic-dark-mode .admin-buildto-fallback-input,
+html.mic-dark-mode .admin-buildto-type-select,
+html.mic-dark-mode .admin-buildto-close-btn {
+    background: #2a2a32;
+    border-color: rgba(255, 255, 255, 0.14);
+    color: #f2f2f2;
+    color-scheme: dark;
+}
+
+html.mic-dark-mode .admin-buildto-type-select option {
+    color: #f2f2f2;
+    background-color: #2a2a32;
+}
+
+html.mic-dark-mode .admin-buildto-code-input--locked,
+html.mic-dark-mode .admin-buildto-fallback-input.admin-buildto-code-input--locked {
+    background: #23232a;
+    color: rgba(255, 255, 255, 0.55);
+    cursor: not-allowed;
+}
+
+html.mic-dark-mode .admin-buildto-search-wrap input[type='search'] {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: 0.65rem center;
+}
+
+html.mic-dark-mode .admin-buildto-table-wrap {
+    background: #18181c;
+    border-color: rgba(255, 255, 255, 0.08);
+    color-scheme: dark;
+}
+
+html.mic-dark-mode .admin-buildto-table {
+    background: #1e1e24;
+}
+
+html.mic-dark-mode .admin-buildto-table thead th {
+    background: #2a2433;
+    color: rgba(255, 255, 255, 0.82);
+    border-bottom-color: rgba(155, 89, 208, 0.25);
+}
+
+html.mic-dark-mode .admin-buildto-table tbody tr:hover {
+    background: rgba(155, 89, 208, 0.08);
+}
+
+html.mic-dark-mode .admin-buildto-table tbody tr:nth-child(even) {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+html.mic-dark-mode .admin-buildto-table tbody tr:nth-child(even):hover {
+    background: rgba(155, 89, 208, 0.1);
+}
+
+html.mic-dark-mode .admin-buildto-item-cell .admin-accounts-meta {
+    color: rgba(255, 255, 255, 0.45);
+}
+
+html.mic-dark-mode .admin-buildto-vendor-cell {
+    color: rgba(255, 255, 255, 0.65);
+}
+
+html.mic-dark-mode .admin-buildto-table thead th:last-child,
+html.mic-dark-mode .admin-buildto-warn-cell {
+    background: #1e1e24;
+    box-shadow: -6px 0 10px rgba(0, 0, 0, 0.35);
+}
+
+html.mic-dark-mode .admin-buildto-table thead th:last-child {
+    background: #2a2433;
+}
+
+html.mic-dark-mode .admin-buildto-warn-input {
+    color: #e8d4ff;
+    border-color: rgba(201, 168, 232, 0.45);
+    background: #2a2433;
+}
+
+html.mic-dark-mode .admin-buildto-table tbody tr:nth-child(even) .admin-buildto-warn-cell {
+    background: #202028;
+}
+
+html.mic-dark-mode .admin-buildto-table tbody tr:hover .admin-buildto-warn-cell {
+    background: rgba(155, 89, 208, 0.08);
+}
+
+html.mic-dark-mode .admin-buildto-table tbody tr:nth-child(even):hover .admin-buildto-warn-cell {
+    background: rgba(155, 89, 208, 0.1);
+}
+
+html.mic-dark-mode .admin-buildto-close-btn:hover {
+    background: #35353f;
+}
+
+.admin-modal-backdrop--stacked {
+    z-index: 12001;
+}
+
+.admin-modal--history {
+    width: min(1200px, 100%);
+    display: flex;
+    flex-direction: column;
+    max-height: min(92vh, 900px);
+    overflow: hidden;
+    padding: 1rem 1.25rem;
+}
+
+.admin-modal--history > h2 {
+    margin: 0 0 0.25rem;
+    font-size: 1.1rem;
+    line-height: 1.25;
+}
+
+.admin-modal--history > .admin-accounts-meta {
+    margin: 0;
+    font-size: 0.8rem;
+    line-height: 1.35;
+}
+
+.admin-modal--history #admin-forecast-history-body,
+.admin-modal--history #admin-forecast-override-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.admin-modal--history .admin-modal-actions {
+    flex-shrink: 0;
+    margin-top: 0.75rem;
+}
+
+.admin-forecast-history-section {
+    margin-top: 0.65rem;
+}
+
+.admin-forecast-history-section:first-child {
+    margin-top: 0;
+}
+
+.admin-forecast-history-heading {
+    margin: 0 0 0.35rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.admin-forecast-history-toolbar {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin: 0.5rem 0 0.35rem;
+}
+
+.admin-forecast-history-nav {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.4rem;
+    flex-shrink: 0;
+}
+
+.admin-forecast-history-nav .mic-settings-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    text-align: center;
+}
+
+.admin-modal--history .admin-history-grid-wrap {
+    max-height: none;
+    overflow-x: auto;
+    overflow-y: visible;
+}
+
+.admin-modal--history .admin-table {
+    font-size: 0.78rem;
+}
+
+.admin-modal--history .admin-table th,
+.admin-modal--history .admin-table td {
+    padding: 0.25rem 0.35rem;
+    vertical-align: middle;
+}
+
+.admin-modal--history .admin-history-hour-col {
+    font-size: 0.72rem;
+}
+
+.admin-modal--history .admin-history-week-grid .admin-history-day-col,
+.admin-modal--history .admin-history-week-grid .admin-history-day-label {
+    min-width: 5.5rem;
+}
+
+.admin-modal--history .admin-history-day-label .admin-accounts-meta {
+    font-size: 0.7rem;
+}
+
+.admin-modal--history .admin-forecast-history-source {
+    margin-top: 0.1rem;
+    font-size: 0.58rem;
+}
+
+.admin-modal--history .admin-forecast-history-col-edit {
+    display: inline;
+    margin-top: 0;
+    font-size: 0.68rem;
+}
+
+.admin-modal--history .admin-forecast-history-col-save {
+    font-weight: 600;
+    color: #15803d;
+    text-decoration: none;
+    padding: 0.15rem 0.45rem;
+    border: 1px solid rgba(34, 197, 94, 0.45);
+    border-radius: 4px;
+    background: rgba(34, 197, 94, 0.1);
+}
+
+.admin-modal--history .admin-history-inline-cell {
+    padding: 0.15rem 0.2rem;
+}
+
+.admin-modal--history .admin-history-inline-input {
+    width: 3.25rem;
+    max-width: 100%;
+    min-width: 0;
+    padding: 0.15rem 0.2rem;
+    font: inherit;
+    font-size: 0.72rem;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    border: 1px solid rgba(0, 0, 0, 0.18);
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+.admin-modal--history .admin-history-week-row--inline-edit .admin-history-day-label {
+    background: rgba(251, 191, 36, 0.12);
+}
+
+html.mic-dark-mode .admin-modal--history .admin-history-inline-input {
+    background: #2a2a2a;
+    border-color: rgba(255, 255, 255, 0.2);
+    color: inherit;
+}
+
+html.mic-dark-mode .admin-modal--history .admin-forecast-history-col-save {
+    color: #86efac;
+    border-color: rgba(134, 239, 172, 0.45);
+    background: rgba(34, 197, 94, 0.15);
+}
+
+.admin-forecast-history-edit {
+    margin: 0.75rem 0;
+    padding: 0.85rem 1rem;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.02);
+}
+
+.admin-forecast-history-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.admin-forecast-history-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.9rem;
+}
+
+.admin-forecast-history-form input[type='date'],
+.admin-forecast-history-form input[type='number'],
+.admin-forecast-history-form select {
+    max-width: 16rem;
+    padding: 0.35rem 0.5rem;
+}
+
+.admin-forecast-history-entry-mode,
+.admin-forecast-adjustments-scope,
+.admin-forecast-adjustments-mode {
+    border: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1rem;
+    align-items: center;
+}
+
+.admin-forecast-history-entry-mode legend,
+.admin-forecast-adjustments-scope legend,
+.admin-forecast-adjustments-mode legend {
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 0;
+    margin: 0 0.5rem 0 0;
+}
+
+.admin-forecast-history-hour-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
+    gap: 0.5rem;
+}
+
+.admin-forecast-history-hour-input span {
+    font-size: 0.75rem;
+    color: rgba(0, 0, 0, 0.55);
+}
+
+.admin-forecast-history-form-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.admin-forecast-history-source {
+    display: inline-block;
+    margin-top: 0.15rem;
+    padding: 0.05rem 0.35rem;
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.06);
+}
+
+.admin-forecast-history-source--manual-ui {
+    background: rgba(59, 130, 246, 0.15);
+    color: #1d4ed8;
+}
+
+.admin-forecast-history-source--live-scrape {
+    background: rgba(34, 197, 94, 0.15);
+    color: #15803d;
+}
+
+.admin-forecast-history-col-edit {
+    display: block;
+    margin-top: 0.2rem;
+    padding: 0;
+    border: none;
+    background: none;
+    font-size: 0.72rem;
+    color: #2563eb;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.admin-forecast-preview-adjustments {
+    margin: 0.75rem 0 1rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.02);
+}
+
+.admin-forecast-adjustments-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.25rem;
+    align-items: flex-end;
+    margin-bottom: 0.75rem;
+}
+
+.admin-forecast-adjustments-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.9rem;
+}
+
+.admin-forecast-adjustments-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.admin-forecast-adjustments-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.admin-forecast-adjustments-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    font-size: 0.9rem;
+}
+
+.admin-forecast-adjust-remove {
+    padding: 0.15rem 0.5rem;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 4px;
+    background: #fff;
+    font-size: 0.75rem;
+    cursor: pointer;
+}
+
+.admin-forecast-auto-submit {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.admin-forecast-update-badge {
+    display: block;
+    margin-top: 0.2rem;
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: rgba(0, 0, 0, 0.55);
+}
+
+.admin-forecast-update-badge--auto {
+    color: #15803d;
+}
+
+.admin-forecast-update-badge--user {
+    color: #1d4ed8;
+}
+
+html.mic-dark-mode .admin-forecast-update-badge {
+    color: rgba(255, 255, 255, 0.55);
+}
+
+html.mic-dark-mode .admin-forecast-update-badge--auto {
+    color: #86efac;
+}
+
+html.mic-dark-mode .admin-forecast-update-badge--user {
+    color: #93c5fd;
+}
+
+.admin-forecast-update-badge--ph {
+    color: #9a6700;
+}
+
+html.mic-dark-mode .admin-forecast-update-badge--ph {
+    color: #fbbf24;
+}
+
+.admin-modal--forecast-ph {
+    max-width: 42rem;
+}
+
+.admin-forecast-ph-intro {
+    margin: 0 0 1rem;
+}
+
+.admin-forecast-ph-area-nav {
+    margin-bottom: 1rem;
+}
+
+.admin-forecast-ph-add {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 0.75rem;
+    align-items: end;
+    margin-bottom: 1rem;
+}
+
+@media (max-width: 640px) {
+    .admin-forecast-ph-add {
+        grid-template-columns: 1fr;
+    }
+}
+
+.admin-forecast-ph-add-label,
+.admin-forecast-ph-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: 0.9rem;
+    min-width: 0;
+}
+
+.admin-forecast-ph-date-list {
+    list-style: none;
+    margin: 0 0 1rem;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    max-height: min(24rem, 55vh);
+    overflow: auto;
+}
+
+.admin-forecast-ph-date-item {
+    display: grid;
+    grid-template-columns: 1fr 9.5rem auto;
+    gap: 0.65rem 0.75rem;
+    align-items: end;
+    padding: 0.75rem;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 0.5rem;
+}
+
+.admin-forecast-ph-date-item--readonly {
+    grid-template-columns: 1fr auto;
+    align-items: center;
+}
+
+@media (max-width: 640px) {
+    .admin-forecast-ph-date-item {
+        grid-template-columns: 1fr;
+    }
+}
+
+.admin-forecast-ph-date-label {
+    font-weight: 600;
+}
+
+.admin-forecast-ph-row-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+.admin-forecast-ph-field input[type='date'],
+.admin-forecast-ph-field input[type='text'],
+.admin-forecast-ph-add-label input[type='date'],
+.admin-forecast-ph-add-label input[type='text'] {
+    width: 100%;
+    min-height: 2.125rem;
+}
+
+html.mic-dark-mode .admin-forecast-ph-date-item {
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.admin-forecast-manual-history-total {
+    margin: 0.5rem 0 0;
+    font-size: 0.95rem;
+}
+
+.admin-modal--forecast-manual-history .admin-forecast-history-hour-grid {
+    margin-top: 0.75rem;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0.3rem;
+}
+
+.admin-modal--forecast-manual-history .admin-forecast-history-hour-input {
+    flex: 1 1 0;
+    min-width: 0;
+    gap: 0.15rem;
+}
+
+.admin-modal--forecast-manual-history .admin-forecast-history-hour-input span {
+    font-size: 0.62rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.admin-modal--forecast-manual-history .admin-forecast-history-hour-input input {
+    max-width: none;
+    width: 100%;
+    min-width: 0;
+    padding: 0.28rem 0.2rem;
+    font-size: 0.8rem;
+}
+
+.admin-forecast-preview-summary--adjustments {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.25rem;
+    align-items: baseline;
+}
+
+.admin-modal--history .admin-forecast-preview-summary {
+    margin: 0 0 0.5rem;
+}
+
+.admin-forecast-status-table tbody tr {
+    height: 4.85rem;
+}
+
+.admin-forecast-status-table tbody td {
+    vertical-align: middle;
+    box-sizing: border-box;
+    padding-top: 0.15rem;
+    padding-bottom: 0.15rem;
+}
+
+.admin-forecast-status-table tbody td.admin-forecast-status-cell {
+    height: 4.55rem;
+    padding: 0;
+    vertical-align: top;
+}
+
+.admin-forecast-status-table .admin-forecast-store-cell {
+    width: 100%;
+    min-width: 0;
+    padding: 0.35rem 0.6rem;
+    vertical-align: middle;
+}
+
+.admin-forecast-store-cell-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 0.2rem;
+    height: 100%;
+    min-height: 4.55rem;
+    box-sizing: border-box;
+}
+
+.admin-forecast-status-table .admin-forecast-actions {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 0.35rem 0.45rem;
+    vertical-align: middle;
+}
+
+.admin-forecast-actions-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    gap: 0.3rem;
+    height: 100%;
+    min-height: 4.55rem;
+    box-sizing: border-box;
+}
+
+.admin-forecast-status-table .admin-forecast-actions .mic-settings-btn {
+    width: 100%;
+    text-align: center;
+}
+
+.admin-forecast-store-cell {
+    vertical-align: top;
+}
+
+.admin-forecast-store-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    width: 100%;
+    min-width: 0;
+}
+
+.admin-forecast-store-tools {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    flex: 0 0 auto;
+}
+
+.admin-forecast-store-number {
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: 0.01em;
+    flex: 0 0 auto;
+}
+
+.admin-forecast-store-history-label {
+    line-height: 1.25;
+    flex: 1 1 auto;
+    min-width: 0;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+}
+
+.admin-forecast-history-icon-btn {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 0;
+    min-height: 0;
+    margin-top: 0;
+    padding: 0.2rem;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: rgba(42, 42, 50, 0.72);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.admin-forecast-history-icon-btn:hover {
+    color: #2563eb;
+}
+
+.admin-forecast-store-week-total-btn {
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 0.1rem 0.35rem;
+    border: none !important;
+    background: color-mix(in srgb, #2563eb 8%, transparent) !important;
+    box-shadow: none !important;
+    font-size: 0.95rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+    color: #1d4ed8;
+    cursor: pointer;
+    white-space: nowrap;
+    border-radius: 4px;
+}
+
+.admin-forecast-store-week-total-btn:hover:not(:disabled) {
+    color: #2563eb;
+}
+
+.admin-forecast-store-week-total-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+.admin-forecast-store-week-total-btn:focus-visible {
+    outline: 2px solid rgba(37, 99, 235, 0.45);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+html.mic-dark-mode .admin-forecast-store-week-total-btn {
+    color: rgba(255, 255, 255, 0.88);
+}
+
+html.mic-dark-mode .admin-forecast-store-week-total-btn:hover:not(:disabled) {
+    color: #93c5fd;
+}
+
+.admin-forecast-history-icon-btn:focus-visible {
+    outline: 2px solid rgba(37, 99, 235, 0.45);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+.admin-forecast-history-icon {
+    width: 2rem;
+    height: 2rem;
+    display: block;
+}
+
+html.mic-dark-mode .admin-forecast-history-icon-btn {
+    color: rgba(255, 255, 255, 0.72);
+}
+
+html.mic-dark-mode .admin-forecast-history-icon-btn:hover {
+    color: #93c5fd;
+}
+
+.admin-history-grid-wrap {
+    overflow: auto;
+    max-height: min(55vh, 520px);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
+}
+
+.admin-history-grid th,
+.admin-history-grid td {
+    white-space: nowrap;
+}
+
+.admin-history-grid thead th {
+    position: sticky;
+    top: 0;
+    background: #fff;
+    z-index: 1;
+}
+
+.admin-history-hour {
+    position: sticky;
+    left: 0;
+    background: #fff;
+    z-index: 1;
+    font-weight: 600;
+}
+
+.admin-history-grid thead th:first-child {
+    left: 0;
+    z-index: 2;
+}
+
+.admin-history-num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.admin-history-total {
+    font-weight: 600;
+}
+
+.admin-history-col-label {
+    display: block;
+}
+
+.admin-forecast-area-nav {
+    margin-bottom: 1rem;
+    width: 100%;
+}
+
+.admin-forecast-area-nav .admin-accounts-scope-row-wrap,
+.admin-forecast-area-nav .admin-forecast-area-tabs {
+    width: 100%;
+    max-width: none;
+}
+
+.admin-modal--forecast-preview {
+    width: min(1200px, 100%);
+    padding: 0;
+    overflow: hidden;
+    background: var(--grey, #ececec);
+    display: flex;
+    flex-direction: column;
+    max-height: min(92vh, 900px);
+}
+
+.admin-modal--forecast-preview .admin-forecast-preview-header {
+    padding: 1.25rem 1.5rem 0.75rem;
+    background: #fff;
+    flex-shrink: 0;
+}
+
+.admin-modal--forecast-preview .admin-forecast-preview-header h2 {
+    margin: 0 0 0.35rem;
+    font-size: var(--font-size-2, 1.25rem);
+    font-weight: var(--font-weight-page-title, 700);
+    letter-spacing: 0.03em;
+}
+
+.admin-modal--forecast-preview .admin-forecast-preview-body-wrap {
+    padding: 0 1.5rem 1.25rem;
+}
+
+.admin-forecast-preview-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.admin-forecast-preview-scroll .admin-forecast-preview-adjustments {
+    margin: 0.75rem 1.5rem 0;
+}
+
+.admin-forecast-preview-scroll .admin-forecast-preview-body-wrap {
+    padding-top: 0.75rem;
+}
+
+.admin-forecast-preview-scroll #admin-forecast-preview-error {
+    margin: 0.5rem 1.5rem 0;
+}
+
+.admin-forecast-preview-scroll .admin-forecast-preview-lifelenz-note {
+    margin: 0.35rem 1.5rem 0.75rem;
+}
+
+.admin-forecast-store-tabs {
+    padding: 0 1.5rem 0.75rem;
+    background: #fff;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    flex-shrink: 0;
+}
+
+.admin-forecast-store-tabs .admin-accounts-scope-row-wrap {
+    margin: 0;
+}
+
+.admin-forecast-preview-summary {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.75rem;
+    padding: 0.85rem 1rem;
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--tb-purple, #7a3eb1) 12%, white);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tb-purple, #7a3eb1) 22%, transparent);
+}
+
+.admin-forecast-week-total-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--charcoal, #1a1a1a) 62%, white);
+}
+
+.admin-forecast-week-total-value {
+    font-size: 1.65rem;
+    font-weight: var(--font-weight-semibold, 700);
+    font-variant-numeric: tabular-nums;
+    color: var(--charcoal, #1a1a1a);
+    line-height: 1.1;
+}
+
+.admin-forecast-preview-grid-wrap {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.admin-forecast-preview-grid-wrap .admin-history-grid thead th {
+    background: color-mix(in srgb, var(--tb-purple-light, #9b63d6) 14%, white);
+    font-weight: var(--font-weight-semibold, 600);
+}
+
+.admin-forecast-preview-grid-wrap .admin-history-total {
+    background: color-mix(in srgb, var(--grey, #ececec) 55%, white);
+}
+
+.admin-modal--forecast-preview .admin-modal-actions {
+    padding: 1rem 1.5rem;
+    background: #fff;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    margin-top: 0;
+    flex-shrink: 0;
+}
+
+html.mic-dark-mode .admin-modal--forecast-preview {
+    background: #141418;
+}
+
+html.mic-dark-mode .admin-modal--forecast-preview .admin-forecast-preview-header,
+html.mic-dark-mode .admin-modal--forecast-preview .admin-forecast-store-tabs,
+html.mic-dark-mode .admin-modal--forecast-preview .admin-modal-actions {
+    background: #1e1e24;
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+html.mic-dark-mode .admin-forecast-preview-grid-wrap {
+    background: #1e1e24;
+}
+
+html.mic-dark-mode .admin-forecast-preview-summary {
+    background: color-mix(in srgb, var(--tb-purple-light, #9b63d6) 18%, #1e1e24);
+}
+
+html.mic-dark-mode .admin-forecast-preview-grid-wrap .admin-history-grid thead th {
+    background: color-mix(in srgb, var(--tb-purple-light, #9b63d6) 22%, #1e1e24);
+}
+
+html.mic-dark-mode .admin-history-grid-wrap {
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+html.mic-dark-mode .admin-history-grid thead th,
+html.mic-dark-mode .admin-history-hour {
+    background: #1e1e24;
+}
+
+html.mic-dark-mode .admin-forecast-history-edit,
+html.mic-dark-mode .admin-forecast-preview-adjustments {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+html.mic-dark-mode .admin-forecast-history-hour-input span {
+    color: rgba(255, 255, 255, 0.55);
+}
+
+html.mic-dark-mode .admin-forecast-adjust-remove {
+    background: #1e1e24;
+    border-color: rgba(255, 255, 255, 0.15);
+    color: inherit;
+}
+
+.admin-modal--forecast-three-week-confirm {
+    max-width: 28rem;
+}
+
+.admin-forecast-three-week-ranges {
+    list-style: none;
+    margin: 0.75rem 0;
+    padding: 0;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.admin-forecast-three-week-ranges li {
+    display: flex;
+    gap: 0.75rem;
+    align-items: baseline;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    font-size: 0.9rem;
+}
+
+.admin-forecast-three-week-ranges li:last-child {
+    border-bottom: none;
+}
+
+.admin-forecast-three-week-ranges-label {
+    flex: 0 0 auto;
+    min-width: 4.25rem;
+    font-weight: 600;
+    color: rgba(0, 0, 0, 0.72);
+}
+
+.admin-forecast-three-week-confirm-note {
+    margin-top: 0.25rem;
+}
+
+html.mic-dark-mode .admin-forecast-three-week-ranges {
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+html.mic-dark-mode .admin-forecast-three-week-ranges li {
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+html.mic-dark-mode .admin-forecast-three-week-ranges-label {
+    color: rgba(255, 255, 255, 0.78);
+}
+
+.admin-modal--forecast-progress {
+    max-height: min(94vh, 860px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.admin-modal--forecast-progress h2 {
+    margin: 0 0 0.35rem;
+    font-size: 1.15rem;
+}
+
+.admin-modal--forecast-progress > .admin-forecast-progress-body > .admin-forecast-progress-stage > .admin-accounts-meta {
+    margin: 0 0 0.45rem;
+}
+
+.admin-forecast-progress-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.admin-modal--forecast-progress .admin-forecast-progress-stage[hidden] {
+    display: none !important;
+}
+
+.admin-modal--forecast-progress #admin-forecast-progress-working:not([hidden]) {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.admin-modal--forecast-progress #admin-forecast-progress-done:not([hidden]) {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.admin-modal-actions--progress {
+    flex-shrink: 0;
+    margin-top: auto;
+    padding-top: 0.5rem;
+}
+
+.admin-modal-actions--progress #admin-forecast-progress-close:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.admin-forecast-progress-unified {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    min-height: 0;
+    flex: 1;
+}
+
+.admin-forecast-progress-week {
+    flex-shrink: 0;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+}
+
+.admin-forecast-progress-week-head,
+.admin-forecast-progress-week-row {
+    display: grid;
+    grid-template-columns: 4.5rem 1fr 1fr;
+    gap: 0.5rem;
+    align-items: center;
+    padding: 0.35rem 0.65rem;
+}
+
+.admin-forecast-progress-week-head {
+    background: #f3f3f5;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #666;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.admin-forecast-progress-week-rows {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.admin-forecast-progress-week-row {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    font-size: 0.84rem;
+}
+
+.admin-forecast-progress-week-row:last-child {
+    border-bottom: none;
+}
+
+.admin-forecast-progress-week-day {
+    font-weight: 600;
+}
+
+.admin-forecast-progress-week-mmx,
+.admin-forecast-progress-week-ll {
+    color: #444;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    border-radius: 4px;
+    padding: 0.12rem 0.35rem;
+}
+
+.admin-forecast-progress-week-row.is-active {
+    background: color-mix(in srgb, var(--primary, #702283) 4%, #fff);
+}
+
+.admin-forecast-progress-week-col--active {
+    background: color-mix(in srgb, var(--primary, #702283) 10%, #fff);
+}
+
+.admin-forecast-progress-week-col--done {
+    background: color-mix(in srgb, #4caf50 12%, #fff);
+}
+
+.admin-forecast-progress-week-col--error {
+    background: color-mix(in srgb, #b00020 8%, #fff);
+    color: #b00020;
+}
+
+.admin-forecast-progress-detail-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.55rem;
+    flex: 1;
+    min-height: 0;
+}
+
+.admin-forecast-progress-detail-pane {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
+    padding: 0.45rem 0.55rem;
+    background: #fff;
+}
+
+.admin-forecast-progress-detail-pane .admin-forecast-progress-detail {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    border: none;
+    padding: 0;
+    background: transparent;
+}
+
+.admin-forecast-progress-detail--lifelenz {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+.admin-forecast-progress-pane-title {
+    margin: 0 0 0.25rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.admin-forecast-progress-manual-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    flex-shrink: 0;
+}
+
+.admin-forecast-manual-actions {
+    margin: 0.5rem 0 1rem;
+}
+
+.admin-forecast-progress-layout {
+    display: grid;
+    grid-template-columns: minmax(160px, 220px) 1fr;
+    gap: 1rem;
+    flex: 1;
+    min-height: 280px;
+    max-height: 52vh;
+}
+
+@media (max-width: 720px) {
+    .admin-forecast-progress-detail-split {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-forecast-progress-week-head,
+    .admin-forecast-progress-week-row {
+        grid-template-columns: 3.5rem 1fr 1fr;
+        gap: 0.45rem;
+        padding: 0.45rem 0.55rem;
+    }
+}
+
+.admin-forecast-progress-days {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
+    background: #fff;
+}
+
+.admin-forecast-progress-day {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.15rem 0.5rem;
+    padding: 0.55rem 0.75rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    font-size: 0.88rem;
+    min-height: 3.35rem;
+    box-sizing: border-box;
+}
+
+.admin-forecast-progress-day:last-child {
+    border-bottom: none;
+}
+
+.admin-forecast-progress-day--filling,
+.admin-forecast-progress-day--saving,
+.admin-forecast-progress-day--verifying {
+    background: color-mix(in srgb, var(--tb-purple-light, #9b63d6) 12%, white);
+}
+
+.admin-forecast-progress-live {
+    font-weight: 600;
+    color: var(--tb-purple, #6b3fa0);
+    margin: 0 0 0.25rem;
+    min-height: 1rem;
+    font-size: 0.82rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.admin-forecast-progress-hour-row--entering,
+.admin-forecast-progress-hour-row--verifying {
+    background: color-mix(in srgb, var(--tb-purple-light, #9b63d6) 14%, white);
+}
+
+.admin-forecast-progress-hour-row--confirmed {
+    background: color-mix(in srgb, #2e7d32 10%, white);
+}
+
+.admin-forecast-progress-hour-row--failed {
+    background: color-mix(in srgb, #c62828 10%, white);
+}
+
+.admin-forecast-progress-hour-status {
+    font-size: 0.82rem;
+}
+
+.admin-forecast-progress-day--done {
+    background: color-mix(in srgb, #2e7d32 10%, white);
+}
+
+.admin-forecast-progress-day--error {
+    background: color-mix(in srgb, #c62828 10%, white);
+}
+
+.admin-forecast-progress-day-label {
+    font-weight: 600;
+}
+
+.admin-forecast-progress-day-total {
+    font-variant-numeric: tabular-nums;
+    color: rgba(0, 0, 0, 0.72);
+}
+
+.admin-forecast-progress-day-state {
+    grid-column: 1 / -1;
+    font-size: 0.78rem;
+    color: rgba(0, 0, 0, 0.55);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+    min-height: 0.95rem;
+}
+
+.admin-forecast-progress-detail {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
+    background: #fff;
+    padding: 0.75rem 1rem;
+}
+
+.admin-forecast-progress-detail-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.75rem;
+    margin-bottom: 0.2rem;
+    flex-shrink: 0;
+}
+
+.admin-forecast-progress-detail-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.admin-forecast-progress-detail-date-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.35rem 0.5rem;
+    min-width: 0;
+}
+
+.admin-forecast-progress-day-nav {
+    flex-shrink: 0;
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 6px;
+    background: #fff;
+    color: #444;
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.admin-forecast-progress-day-nav:hover:not(:disabled) {
+    border-color: rgba(112, 34, 131, 0.35);
+    color: var(--primary, #702283);
+}
+
+.admin-forecast-progress-day-nav:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.admin-forecast-progress-detail-date {
+    font-weight: 700;
+    font-size: 0.92rem;
+}
+
+.admin-forecast-progress-detail-total {
+    margin-left: auto;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.admin-forecast-progress-hour-wrap {
+    overflow: hidden;
+    flex: 1;
+    margin-top: 0.2rem;
+    min-height: 0;
+}
+
+.admin-forecast-progress-hour-table {
+    font-size: 0.78rem;
+    table-layout: fixed;
+    width: 100%;
+}
+
+.admin-forecast-progress-hour-table.admin-table tbody tr {
+    height: 1.3rem;
+    max-height: 1.3rem;
+}
+
+.admin-forecast-progress-hour-table.admin-table th,
+.admin-forecast-progress-hour-table.admin-table td {
+    padding: 0.12rem 0.35rem;
+    vertical-align: middle;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1;
+    height: 1.3rem;
+    max-height: 1.3rem;
+    box-sizing: border-box;
+}
+
+.admin-forecast-progress-hour-table tbody th,
+.admin-forecast-progress-hour-table tbody td {
+    padding: 0.12rem 0.35rem;
+    vertical-align: middle;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1;
+    height: 1.3rem;
+    max-height: 1.3rem;
+    box-sizing: border-box;
+}
+
+.admin-forecast-progress-hour-table thead th {
+    padding-bottom: 0.2rem;
+    font-size: 0.72rem;
+}
+
+.admin-forecast-progress-done {
+    padding: 0;
+}
+
+.admin-forecast-progress-done-header {
+    flex-shrink: 0;
+    text-align: center;
+    padding-bottom: 0.75rem;
+}
+
+.admin-forecast-progress-done h2,
+.admin-forecast-progress-done-header h2 {
+    margin: 0 0 0.35rem;
+    text-align: center;
+    font-size: 1.25rem;
+}
+
+.admin-forecast-progress-done-meta {
+    text-align: center;
+    margin: 0;
+}
+
+.admin-forecast-progress-done-results {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+}
+
+.admin-forecast-progress-done-store + .admin-forecast-progress-done-store {
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.admin-forecast-progress-done-store h3 {
+    margin: 0 0 0.65rem;
+    font-size: 1rem;
+}
+
+.admin-forecast-progress-done-error {
+    margin: 0 0 0.65rem;
+}
+
+.admin-forecast-progress-done-table-wrap {
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+}
+
+.admin-forecast-progress-done-table {
+    width: 100%;
+    margin: 0;
+}
+
+.admin-forecast-progress-done-table thead th {
+    background: #f3f3f5;
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #666;
+}
+
+.admin-forecast-progress-done-table tbody th {
+    font-weight: 600;
+    width: 3.5rem;
+}
+
+.admin-forecast-progress-done-table tfoot th,
+.admin-forecast-progress-done-table tfoot td {
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    background: color-mix(in srgb, #4caf50 8%, #fff);
+}
+
+.admin-forecast-progress-done-cell--bad {
+    color: #b00020;
+    font-weight: 600;
+}
+
+html.mic-dark-mode .admin-forecast-progress-done-table-wrap {
+    background: #1e1e24;
+    border-color: #444;
+}
+
+html.mic-dark-mode .admin-forecast-progress-done-table thead th {
+    background: #2a2a32;
+    color: #aaa;
+}
+
+html.mic-dark-mode .admin-forecast-progress-done-table tfoot th,
+html.mic-dark-mode .admin-forecast-progress-done-table tfoot td {
+    background: color-mix(in srgb, #4caf50 12%, #1e1e24);
+}
+
+.admin-forecast-progress-summary {
+    list-style: none;
+    margin: 1rem 0 0;
+    padding: 0;
+    text-align: left;
+    max-width: 420px;
+    margin-inline: auto;
+}
+
+.admin-forecast-progress-summary li {
+    padding: 0.45rem 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.admin-forecast-progress-summary-bad {
+    color: #c62828;
+}
+
+html.mic-dark-mode .admin-forecast-progress-week,
+html.mic-dark-mode .admin-forecast-progress-detail-pane {
+    background: #1e1e24;
+    border-color: #444;
+}
+
+html.mic-dark-mode .admin-forecast-progress-week-head {
+    background: #2a2a32;
+    color: #aaa;
+    border-color: #444;
+}
+
+html.mic-dark-mode .admin-forecast-progress-week-mmx,
+html.mic-dark-mode .admin-forecast-progress-week-ll {
+    color: #ccc;
+}
+
+html.mic-dark-mode .admin-forecast-progress-week-row {
+    border-color: #333;
+}
+
+html.mic-dark-mode .admin-forecast-progress-week-row.is-active {
+    background: color-mix(in srgb, var(--primary, #702283) 8%, #1e1e24);
+}
+
+html.mic-dark-mode .admin-forecast-progress-week-col--active {
+    background: color-mix(in srgb, var(--primary, #702283) 18%, #1e1e24);
+}
+
+html.mic-dark-mode .admin-forecast-progress-week-col--done {
+    background: color-mix(in srgb, #4caf50 16%, #1e1e24);
+}
+
+html.mic-dark-mode .admin-forecast-progress-week-col--error {
+    background: color-mix(in srgb, #b00020 14%, #1e1e24);
+    color: #ff8a80;
+}
+
+html.mic-dark-mode .admin-forecast-progress-days,
+html.mic-dark-mode .admin-forecast-progress-detail {
+    background: #1e1e24;
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+html.mic-dark-mode .admin-forecast-progress-day-nav {
+    background: #2a2a32;
+    border-color: #444;
+    color: #ddd;
+}
+
+html.mic-dark-mode .admin-forecast-progress-day-nav:hover:not(:disabled) {
+    border-color: rgba(180, 120, 200, 0.45);
+    color: #e1bee7;
+}
+
+html.mic-dark-mode .admin-forecast-progress-day--filling,
+html.mic-dark-mode .admin-forecast-progress-day--saving,
+html.mic-dark-mode .admin-forecast-progress-day--verifying {
+    background: color-mix(in srgb, var(--tb-purple-light, #9b63d6) 20%, #1e1e24);
+}
+
+html.mic-dark-mode .admin-forecast-progress-live {
+    color: #c4b5fd;
+}
+
+html.mic-dark-mode .admin-forecast-progress-hour-row--entering,
+html.mic-dark-mode .admin-forecast-progress-hour-row--verifying {
+    background: color-mix(in srgb, var(--tb-purple-light, #9b63d6) 22%, #1e1e24);
+}
+
+html.mic-dark-mode .admin-forecast-progress-hour-row--confirmed {
+    background: color-mix(in srgb, #66bb6a 16%, #1e1e24);
+}
+
+html.mic-dark-mode .admin-forecast-progress-hour-row--failed {
+    background: color-mix(in srgb, #ef5350 16%, #1e1e24);
+}
+
+html.mic-dark-mode .admin-forecast-progress-day--done {
+    background: color-mix(in srgb, #66bb6a 16%, #1e1e24);
+}
+
+.admin-forecast-toolbar {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+    width: 100%;
+    margin-bottom: 1rem;
+}
+
+.admin-forecast-toolbar-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 0.75rem;
+    width: 100%;
+}
+
+.admin-forecast-toolbar-row > .mic-settings-btn {
+    flex: 1 1 calc(50% - 0.375rem);
+    min-width: min(100%, 10rem);
+    text-align: center;
+}
+
+@media (max-width: 640px) {
+    .admin-forecast-toolbar-row {
+        flex-direction: column;
+    }
+
+    .admin-forecast-toolbar-row > .mic-settings-btn {
+        flex: 1 1 100%;
+        width: 100%;
+    }
+}
+
+.admin-forecast-lifelenz-status {
+    font-size: var(--font-size-0, 0.875rem);
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    background: #e8e8e8;
+    color: #333;
+}
+
+.admin-forecast-lifelenz-status--ok {
+    background: color-mix(in srgb, #66bb6a 22%, #fff);
+    color: #1b5e20;
+}
+
+.admin-forecast-lifelenz-status--warn {
+    background: color-mix(in srgb, #ffb74d 28%, #fff);
+    color: #6d4c00;
+}
+
+.admin-modal--lifelenz-setup {
+    width: min(480px, 100%);
+}
+
+.admin-modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.admin-modal-header h2 {
+    margin: 0;
+}
+
+.admin-modal-close {
+    flex: 0 0 auto;
+    width: 2rem;
+    height: 2rem;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: #666;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+}
+
+.admin-modal-close:hover {
+    background: rgba(0, 0, 0, 0.06);
+    color: #222;
+}
+
+.admin-modal-actions--lifelenz {
+    justify-content: flex-end;
+}
+
+.admin-modal-actions--lifelenz #admin-forecast-lifelenz-remove:not([hidden]) {
+    margin-right: auto;
+}
+
+html.mic-dark-mode .admin-modal-close {
+    color: #bbb;
+}
+
+html.mic-dark-mode .admin-modal-close:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+}
+
+.admin-forecast-lifelenz-privacy {
+    margin: 0 0 1rem;
+    padding: 0.75rem 0.85rem;
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--primary, #702283) 8%, #fff);
+    border: 1px solid color-mix(in srgb, var(--primary, #702283) 18%, #ddd);
+    font-size: var(--font-size-0, 0.875rem);
+    line-height: 1.45;
+}
+
+.admin-forecast-lifelenz-form label {
+    display: block;
+    margin-bottom: 0.75rem;
+}
+
+.admin-forecast-lifelenz-form input[type='email'],
+.admin-forecast-lifelenz-form input[type='password'] {
+    display: block;
+    width: 100%;
+    margin-top: 0.25rem;
+}
+
+.admin-forecast-lifelenz-save {
+    margin: 0.5rem 0 0;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+
+.admin-forecast-lifelenz-save legend {
+    font-size: var(--font-size-0, 0.875rem);
+    padding: 0 0.25rem;
+}
+
+.admin-forecast-lifelenz-save label {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin-bottom: 0.35rem;
+}
+
+.admin-forecast-lifelenz-stores ul {
+    margin: 0.35rem 0 0;
+    padding-left: 1.2rem;
+    max-height: 14rem;
+    overflow: auto;
+}
+
+.admin-forecast-lifelenz-connected {
+    font-weight: 600;
+    margin-bottom: 0.15rem;
+}
+
+.admin-forecast-lifelenz-schedule-note {
+    margin-top: 0.65rem;
+    font-size: var(--font-size-0, 0.875rem);
+    color: #666;
+}
+
+html.mic-dark-mode .admin-forecast-lifelenz-schedule-note {
+    color: #aaa;
+}
+
+.admin-forecast-preview-lifelenz-note {
+    margin: 0 1.5rem 0.5rem;
+}
+
+.admin-forecast-progress-summary-heading {
+    list-style: none;
+    margin-top: 0.65rem;
+    font-size: var(--font-size-0, 0.875rem);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #666;
+}
+
+html.mic-dark-mode .admin-forecast-lifelenz-privacy {
+    background: color-mix(in srgb, var(--primary, #702283) 14%, #1e1e24);
+    border-color: #444;
+}
+
+html.mic-dark-mode .admin-forecast-lifelenz-status {
+    background: #333;
+    color: #eee;
+}
+
+html.mic-dark-mode .admin-forecast-lifelenz-status--ok {
+    background: color-mix(in srgb, #66bb6a 22%, #1e1e24);
+    color: #a5d6a7;
+}
+
+html.mic-dark-mode .admin-forecast-lifelenz-status--warn {
+    background: color-mix(in srgb, #ffb74d 22%, #1e1e24);
+    color: #ffcc80;
+}
+
+/* Setup Store Logins modal */
+.admin-modal--store-logins {
+    padding: 0;
+    background: #d8d8d8;
+    overflow: hidden;
+    color: #2a2a2a;
+}
+
+.admin-modal--store-logins > h2 {
+    margin: 0;
+    padding: 1.15rem 1.5rem 0.85rem;
+    background: #252528;
+    border-bottom: 1px solid #4a4a52;
+    color: #f5f5f5;
+}
+
+.admin-modal--store-logins .admin-store-logins-scope-wrap,
+.admin-modal--store-logins .admin-store-logins-store-wrap {
+    display: grid;
+    gap: 0.55rem;
+    margin: 0;
+    padding: 0.85rem 1.5rem;
+    background: #c8c8c8;
+    border-bottom: 1px solid #a8a8a8;
+}
+
+.admin-modal--store-logins .admin-store-logins-scope-nav {
+    display: grid;
+    gap: 0.65rem;
+}
+
+.admin-modal--store-logins .admin-store-logins-scope-nav .admin-accounts-scope-row-wrap {
+    gap: 0.4rem;
+}
+
+.admin-modal--store-logins .admin-store-logins-scope-nav .admin-accounts-scope-row-label {
+    color: rgba(0, 0, 0, 0.55);
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.admin-modal--store-logins .admin-store-logins-scope-nav .admin-accounts-scope-row {
+    border: none;
+    border-radius: 0;
+    overflow: hidden;
+    background: #b8b8b8;
+}
+
+.admin-modal--store-logins .admin-store-logins-scope-nav .admin-accounts-scope-chip {
+    background: #c4c4c4;
+    color: rgba(0, 0, 0, 0.72);
+    border-right-color: rgba(0, 0, 0, 0.1);
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.admin-modal--store-logins .admin-store-logins-scope-nav .admin-accounts-scope-chip:hover:not(.is-active) {
+    background: #d0d0d0;
+    color: #1a1a1a;
+}
+
+.admin-modal--store-logins .admin-store-logins-scope-nav .admin-accounts-scope-chip.is-active {
+    background: #e0e0e0;
+    color: #1a1a1a;
+    box-shadow: none;
+}
+
+.admin-modal--store-logins .admin-store-logins-scope-nav .admin-accounts-scope-chip.is-active::after {
+    display: none;
+}
+
+.admin-modal--store-logins .admin-store-logins-scope-summary {
+    margin: 0;
+    font-size: 0.84rem;
+    color: rgba(0, 0, 0, 0.55);
+}
+
+.admin-modal--store-logins .admin-store-logins-overview,
+.admin-modal--store-logins .admin-store-logins-edit {
+    padding: 0;
+    background: #e0e0e0;
+}
+
+.admin-modal--store-logins .admin-store-logins-overview {
+    padding: 1rem 1.5rem 0.25rem;
+}
+
+.admin-modal--store-logins .admin-store-logins-edit #admin-store-logins-body {
+    margin-top: 0;
+    padding: 1rem 1.5rem 0.25rem;
+}
+
+.admin-modal--store-logins .admin-store-logins-section h3 {
+    margin: 0 0 0.65rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #1a1a1a;
+}
+
+.admin-modal--store-logins .admin-store-logins-section + .admin-store-logins-section {
+    margin-top: 1.25rem;
+    padding-top: 1.1rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.admin-modal--store-logins .admin-store-logins-entry {
+    margin-bottom: 0.75rem;
+    padding: 0.75rem 0.85rem;
+    border-radius: 0;
+    background: #d4d4d4;
+    color: #1a1a1a;
+    border: 1px solid #b0b0b0;
+}
+
+.admin-modal--store-logins .admin-store-logins-entry .admin-accounts-meta {
+    color: rgba(0, 0, 0, 0.5);
+}
+
+.admin-modal--store-logins .admin-store-logins-form .admin-accounts-field > label,
+.admin-modal--store-logins .admin-store-logins-form .admin-accounts-field > span {
+    color: rgba(0, 0, 0, 0.68);
+    font-weight: 600;
+}
+
+.admin-modal--store-logins .admin-store-logins-form .admin-accounts-field input[type='text'],
+.admin-modal--store-logins .admin-store-logins-form .admin-accounts-field input[type='password'],
+.admin-modal--store-logins .admin-store-logins-form .admin-accounts-field input[type='email'] {
+    font: inherit;
+    padding: 0.6rem 0.7rem;
+    border: 1px solid #a0a0a0;
+    border-radius: 0;
+    background: #ececec;
+    color: #1a1a1a;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.admin-modal--store-logins .admin-store-logins-form .admin-accounts-field input::placeholder {
+    color: rgba(0, 0, 0, 0.35);
+}
+
+.admin-modal--store-logins .admin-store-logins-form .admin-accounts-field input:focus {
+    outline: none;
+    border-color: #707070;
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.12);
+}
+
+.admin-modal--store-logins .admin-store-logins-form .admin-accounts-create-actions .mic-settings-btn.admin-btn-primary {
+    background: #5a5a5a;
+    border-color: #4a4a4a;
+    color: #f0f0f0;
+}
+
+.admin-modal--store-logins .admin-store-logins-form .admin-accounts-create-actions .mic-settings-btn.admin-btn-primary:hover:not(:disabled) {
+    background: #4a4a4a;
+    filter: none;
+}
+
+.admin-modal--store-logins .admin-store-logins-form .admin-accounts-create-actions .mic-settings-btn:not(.admin-btn-primary) {
+    background: #d0d0d0;
+    border-color: rgba(0, 0, 0, 0.15);
+    color: #2a2a2a;
+}
+
+.admin-modal--store-logins .admin-store-logins-form .admin-accounts-create-actions .mic-settings-btn:not(.admin-btn-primary):hover {
+    background: #c4c4c4;
+}
+
+.admin-modal--store-logins .admin-store-logins-overview .admin-table th {
+    background: #b8b8b8;
+    color: rgba(0, 0, 0, 0.82);
+    border-bottom: none;
+    font-weight: 600;
+}
+
+.admin-modal--store-logins .admin-store-logins-overview .admin-table td {
+    border-bottom-color: rgba(0, 0, 0, 0.08);
+    background: #e0e0e0;
+}
+
+.admin-modal--store-logins .admin-store-logins-table {
+    table-layout: fixed;
+    width: 100%;
+}
+
+.admin-modal--store-logins .admin-store-logins-table col.admin-store-logins-col {
+    width: 20%;
+}
+
+.admin-modal--store-logins .admin-store-logins-table th,
+.admin-modal--store-logins .admin-store-logins-table td {
+    vertical-align: top;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.admin-modal--store-logins .admin-store-logins-overview-row {
+    cursor: pointer;
+    transition: background 0.12s ease;
+}
+
+.admin-modal--store-logins .admin-store-logins-overview-row:hover td {
+    background: #d4d4d4;
+}
+
+.admin-modal--store-logins .admin-store-logins-missing {
+    color: rgba(0, 0, 0, 0.42);
+    font-style: italic;
+}
+
+.admin-modal--store-logins > .admin-store-logins-status {
+    margin: 0;
+    padding: 0.65rem 1.5rem;
+    background: #d4d4d4;
+    border-top: 1px solid #b0b0b0;
+    color: #2a2a2a;
+    font-size: 0.88rem;
+    line-height: 1.4;
+}
+
+.admin-modal--store-logins .admin-store-logins-form.is-verifying {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.admin-modal--store-logins > .admin-modal-error {
+    margin: 0;
+    padding: 0.5rem 1.5rem 0;
+    background: #e0e0e0;
+}
+
+.admin-modal--store-logins > .admin-modal-actions {
+    margin: 0;
+    padding: 1rem 1.5rem 1.25rem;
+    background: #d0d0d0;
+    border-top: 1px solid #a8a8a8;
+}
+
+html.mic-dark-mode .admin-modal--store-logins {
+    background: #2a2a2a;
+    color: #e8e8e8;
+}
+
+html.mic-dark-mode .admin-modal--store-logins > h2 {
+    background: #1e1e24;
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #f5f5f5;
+}
+
+html.mic-dark-mode .admin-modal--store-logins > .admin-store-logins-status {
+    background: #3a3a3a;
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #e0e0e0;
+}
+
+html.mic-dark-mode .admin-modal--store-logins .admin-store-logins-overview,
+html.mic-dark-mode .admin-modal--store-logins .admin-store-logins-edit,
+html.mic-dark-mode .admin-modal--store-logins > .admin-modal-error,
+html.mic-dark-mode .admin-modal--store-logins > .admin-modal-actions {
+    background: #323232;
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #eee;
+}
+
+html.mic-dark-mode .admin-modal--store-logins .admin-store-logins-scope-wrap {
+    background: #3a3a3a;
+}
+
+html.mic-dark-mode .admin-modal--store-logins .admin-tabs--full,
+html.mic-dark-mode .admin-modal--store-logins .admin-store-logins-view-tabs {
+    --app-tab-inactive-bg: #404040;
+    --app-tab-active-bg: #323232;
+    --app-tab-active-bottom: 1px solid #323232;
+    --app-tab-text: rgba(255, 255, 255, 0.65);
+    --app-tab-text-active: #f0f0f0;
+    --app-tab-hover-bg: #484848;
+    background: #3a3a3a;
+}
+
+html.mic-dark-mode .admin-modal--store-logins .admin-store-logins-section h3 {
+    color: #eee;
+}
+
+html.mic-dark-mode .admin-modal--store-logins .admin-store-logins-form .admin-accounts-field > label,
+html.mic-dark-mode .admin-modal--store-logins .admin-store-logins-form .admin-accounts-field > span {
+    color: rgba(255, 255, 255, 0.72);
+}
+
+html.mic-dark-mode .admin-modal--store-logins .admin-store-logins-missing {
+    color: rgba(255, 255, 255, 0.45);
+}
+
+html.mic-dark-mode .admin-modal--store-logins .admin-store-logins-form .admin-accounts-create-actions .mic-settings-btn:not(.admin-btn-primary) {
+    background: #484848;
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #eee;
+}
+
+html.mic-dark-mode .admin-modal--store-logins .admin-store-logins-form .admin-accounts-field input[type='text'],
+html.mic-dark-mode .admin-modal--store-logins .admin-store-logins-form .admin-accounts-field input[type='password'],
+html.mic-dark-mode .admin-modal--store-logins .admin-store-logins-form .admin-accounts-field input[type='email'] {
+    background: #3a3a3a;
+    border-color: #555;
+    color: #f0f0f0;
+}
+
+html.mic-dark-mode .admin-modal--store-logins .admin-store-logins-entry {
+    background: #3a3a3a;
+    border-color: #555;
+    color: #eee;
+}
+
+.admin-forecast-preview-target {
+    padding: 0 1.5rem 0.75rem;
+    background: #fff;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    flex-shrink: 0;
+}
+
+.admin-modal--forecast-preview .admin-forecast-preview-target .admin-forecast-target-wrap {
+    margin-bottom: 0.35rem;
+}
+
+html.mic-dark-mode .admin-forecast-preview-target {
+    background: #1e1e24;
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.admin-forecast-override-target {
+    padding: 0 0 0.75rem;
+    margin-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.admin-modal--history .admin-forecast-override-target .admin-forecast-target-wrap {
+    margin-bottom: 0.35rem;
+}
+
+html.mic-dark-mode .admin-forecast-override-target {
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.admin-forecast-target-wrap--inline {
+    width: auto;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.admin-forecast-target-wrap--inline .admin-forecast-target-scope-label,
+.admin-forecast-target-wrap--inline .admin-forecast-target-week-start-label,
+.admin-forecast-target-wrap--inline .admin-forecast-target-day-label {
+    flex-direction: row;
+    align-items: center;
+    flex: 0 0 auto;
+    min-width: 0;
+    gap: 0.35rem;
+    white-space: nowrap;
+}
+
+.admin-forecast-target-wrap--inline select,
+.admin-forecast-target-wrap--inline input[type='date'] {
+    width: auto;
+    min-width: 9rem;
+}
+
+.admin-forecast-override-target-hint {
+    margin: -0.35rem 0 0.75rem;
+}
+
+.admin-forecast-target-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.75rem;
+    width: 100%;
+}
+
+.admin-forecast-target-row .admin-forecast-target-wrap {
+    flex: 1 1 20rem;
+    min-width: 0;
+}
+
+.admin-forecast-target-row > .mic-settings-btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    min-height: 2.125rem;
+    text-align: center;
+}
+
+@media (max-width: 640px) {
+    .admin-forecast-target-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .admin-forecast-target-row > .mic-settings-btn {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+.admin-forecast-target-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 0.75rem;
+    width: 100%;
+}
+
+.admin-forecast-target-scope-label,
+.admin-forecast-target-week-start-label,
+.admin-forecast-target-day-label {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.35rem;
+    flex: 1 1 calc(33.333% - 0.5rem);
+    min-width: min(100%, 10rem);
+    font-size: 0.9rem;
+}
+
+.admin-forecast-target-wrap select,
+.admin-forecast-target-wrap input[type='date'] {
+    width: 100%;
+    box-sizing: border-box;
+    min-width: 0;
+    font: inherit;
+    padding: 0.35rem 0.5rem;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 6px;
+    line-height: 1.25;
+    min-height: 2.125rem;
+    background: #fff;
+}
+
+.admin-forecast-target-wrap select {
+    appearance: none;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23666' d='M1.4.6 6 5.2 10.6.6 12 2l-6 6-6-6z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    padding-right: 1.75rem;
+}
+
+@media (max-width: 640px) {
+    .admin-forecast-target-scope-label,
+    .admin-forecast-target-week-start-label,
+    .admin-forecast-target-day-label {
+        flex: 1 1 100%;
+    }
+}
+
+.admin-forecast-week-start-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.admin-forecast-week-start-label input[type='date'] {
+    font: inherit;
+}
+
+.admin-history-week-grid-wrap {
+    overflow-x: auto;
+}
+
+.admin-history-week-grid .admin-history-day-col,
+.admin-history-week-grid .admin-history-day-label {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--admin-surface, #fff);
+    min-width: 7rem;
+}
+
+.admin-history-week-row--missing .admin-history-day-label {
+    background: rgba(251, 191, 36, 0.12);
+}
+
+.admin-history-hour-col {
+    white-space: nowrap;
+    font-size: 0.8rem;
+}
+
+.admin-forecast-auto-cell {
+    text-align: center;
+    vertical-align: middle;
+}
+
+.admin-forecast-cell-with-override {
+    position: relative;
+    white-space: nowrap;
+}
+
+.admin-forecast-override-btn {
+    margin-left: 0.25rem;
+    padding: 0 0.35rem;
+    font-size: 0.7rem;
+    line-height: 1.4;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.04);
+    cursor: pointer;
+}
+
+.admin-forecast-override-badge {
+    display: inline-block;
+    margin-right: 0.2rem;
+    padding: 0 0.25rem;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #1d4ed8;
+    background: rgba(59, 130, 246, 0.15);
+    border-radius: 3px;
+}
+
+.admin-forecast-override-popover {
+    position: absolute;
+    z-index: 1200;
+    min-width: 200px;
+    padding: 0.75rem;
+    background: var(--admin-surface, #fff);
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.admin-forecast-override-popover-title {
+    margin: 0 0 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.admin-forecast-override-popover-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+html.mic-dark-mode .admin-history-week-grid .admin-history-day-col,
+html.mic-dark-mode .admin-history-week-grid .admin-history-day-label {
+    background: #2a2a2a;
+}
+
+html.mic-dark-mode .admin-forecast-override-popover {
+    background: #2a2a2a;
+    border-color: #555;
+}
+
+/* Override Forecast editor */
+.admin-forecast-override-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1rem;
+    margin-bottom: 0.75rem;
+    flex-shrink: 0;
+}
+
+.admin-forecast-mode-toggle {
+    display: inline-flex;
+    padding: 0.15rem;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.05);
+    gap: 0.1rem;
+}
+
+.admin-forecast-mode-toggle-btn {
+    border: none;
+    background: transparent;
+    padding: 0.2rem 0.65rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1.3;
+    border-radius: 999px;
+    cursor: pointer;
+    color: rgba(0, 0, 0, 0.6);
+    transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.admin-forecast-mode-toggle-btn.is-active {
+    background: #fff;
+    color: #1d4ed8;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.admin-forecast-mode-toggle-btn:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 1px;
+}
+
+html.mic-dark-mode .admin-forecast-mode-toggle {
+    border-color: #555;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+html.mic-dark-mode .admin-forecast-mode-toggle-btn {
+    color: rgba(255, 255, 255, 0.65);
+}
+
+html.mic-dark-mode .admin-forecast-mode-toggle-btn.is-active {
+    background: #2a2a2a;
+    color: #93c5fd;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.admin-forecast-override-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.admin-forecast-override-actions .mic-settings-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    width: auto;
+    text-align: center;
+}
+
+.admin-forecast-override-week-total {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.4rem;
+}
+
+.admin-forecast-override-dayparts {
+    margin-top: 1.25rem;
+}
+
+.admin-forecast-override-dayparts .admin-forecast-history-heading {
+    margin-bottom: 0.15rem;
+}
+
+.admin-forecast-override-dayparts .admin-accounts-meta {
+    margin: 0 0 0.5rem;
+}
+
+.admin-forecast-override-cell {
+    padding: 0.15rem 0.3rem;
+    text-align: center;
+}
+
+.admin-forecast-override-grid .admin-history-num {
+    text-align: center;
+}
+
+.admin-forecast-override-input-wrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.15rem;
+    width: 100%;
+}
+
+.admin-forecast-override-grid .admin-forecast-override-input {
+    width: 4.5rem;
+    padding: 0.15rem 0.25rem;
+    font-size: 0.8rem;
+    text-align: center;
+    border: 1px solid rgba(0, 0, 0, 0.18);
+    border-radius: 4px;
+    background: transparent;
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+.admin-forecast-override-grid .admin-forecast-override-input::-webkit-outer-spin-button,
+.admin-forecast-override-grid .admin-forecast-override-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.admin-forecast-override-input--changed {
+    border-color: #2563eb;
+    background: rgba(59, 130, 246, 0.08);
+    font-weight: 600;
+}
+
+.admin-forecast-override-unit {
+    font-size: 0.7rem;
+    color: rgba(0, 0, 0, 0.55);
+}
+
+.admin-forecast-override-dollar-hint {
+    display: block;
+    margin-top: 0.1rem;
+    font-size: 0.68rem;
+    color: rgba(0, 0, 0, 0.55);
+    text-align: center;
+}
+
+.admin-forecast-override-grid .admin-forecast-override-reset-day {
+    display: block;
+    width: 100%;
+    margin-top: 0;
+    text-align: center;
+}
+
+.admin-forecast-override-reset-day:disabled {
+    color: rgba(0, 0, 0, 0.3);
+    cursor: default;
+}
+
+html.mic-dark-mode .admin-forecast-override-reset-day:disabled {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+html.mic-dark-mode .admin-forecast-override-dollar-hint {
+    color: rgba(255, 255, 255, 0.55);
+}
+
+.admin-forecast-override-grid tfoot .admin-forecast-override-input {
+    font-weight: 600;
+}
+
+html.mic-dark-mode .admin-forecast-override-grid .admin-forecast-override-input {
+    border-color: #555;
+    color: inherit;
+}
+
+html.mic-dark-mode .admin-forecast-override-input--changed {
+    border-color: #60a5fa;
+    background: rgba(96, 165, 250, 0.15);
+}
+
+html.mic-dark-mode .admin-forecast-override-unit {
+    color: rgba(255, 255, 255, 0.55);
+}
+
+/* Daily reports — fixed columns across area tabs */
+.admin-five-am-table {
+    table-layout: fixed;
+    width: 100%;
+}
+
+.admin-five-am-table .admin-five-am-col-store {
+    width: 28%;
+}
+
+.admin-five-am-table .admin-five-am-col-job {
+    width: 11%;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.admin-five-am-table .admin-five-am-col-last-forecast,
+.admin-five-am-table .admin-five-am-col-last-stock {
+    width: 25%;
+}
+
+.admin-five-am-table td.admin-five-am-col-store {
+    font-weight: 600;
+}
+
+/* Store operating times */
+.admin-store-hours-area-nav {
+    margin-bottom: 1rem;
+    width: 100%;
+}
+
+.admin-store-hours-area-nav .admin-accounts-scope-row-wrap,
+.admin-store-hours-area-nav .admin-store-hours-area-tabs {
+    width: 100%;
+    max-width: none;
+}
+
+.admin-store-hours-store-table {
+    width: 100%;
+    table-layout: fixed;
+}
+
+.admin-store-hours-store-table .admin-store-hours-col-store {
+    width: 34%;
+}
+
+.admin-store-hours-store-row {
+    cursor: pointer;
+}
+
+.admin-store-hours-store-row.is-selected {
+    background: color-mix(in srgb, var(--tb-purple-light, #9b59d0) 12%, var(--white, #fff));
+}
+
+.admin-store-hours-store-row:focus-visible {
+    outline: 2px solid var(--tb-purple-light, #9b59d0);
+    outline-offset: -2px;
+}
+
+.admin-store-hours-editor {
+    margin-top: 1.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.admin-store-hours-editor-title {
+    margin: 0 0 0.25rem;
+    font-size: var(--font-size-3, 1.1rem);
+    font-weight: 700;
+}
+
+.admin-store-hours-uniform {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    margin-top: 1rem;
+}
+
+.admin-store-hours-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 8rem;
+}
+
+.admin-store-hours-field-label {
+    font-size: var(--font-size-6);
+    font-weight: 600;
+}
+
+.admin-store-hours-input {
+    width: 5.5rem;
+    min-height: 2.5rem;
+    padding: 0.45rem 0.65rem;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+    font: inherit;
+}
+
+.admin-store-hours-table {
+    margin-top: 1rem;
+    width: 100%;
+    max-width: 36rem;
+}
+
+.admin-store-hours-day-hint {
+    font-size: var(--font-size-6);
+    color: rgba(0, 0, 0, 0.55);
+    white-space: nowrap;
+}
+
+.admin-store-hours-table th,
+.admin-store-hours-table td {
+    padding: 0.55rem 0.65rem;
+    vertical-align: middle;
+}
+
+.admin-store-hours-actions {
+    margin-top: 1rem;
+}
+
+/* Report subscriptions — area tabs + store × report matrix */
+.admin-report-sub-area-nav {
+    margin-bottom: 1rem;
+    width: 100%;
+}
+
+.admin-report-sub-area-nav .admin-accounts-scope-row-wrap,
+.admin-report-sub-area-nav .admin-report-sub-area-tabs {
+    width: 100%;
+    max-width: none;
+}
+
+.admin-report-sub-matrix-wrap {
+    overflow-x: auto;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.65);
+}
+
+.admin-report-sub-matrix {
+    width: 100%;
+    min-width: 36rem;
+    margin: 0;
+    border-collapse: collapse;
+}
+
+.admin-report-sub-matrix th,
+.admin-report-sub-matrix td {
+    vertical-align: top;
+    padding: 0.75rem 0.65rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.admin-report-sub-matrix thead th {
+    background: rgba(122, 62, 177, 0.06);
+    font-size: 0.84rem;
+    font-weight: 700;
+    text-align: left;
+}
+
+.admin-report-sub-matrix-store {
+    min-width: 9rem;
+    max-width: 12rem;
+    font-weight: 600;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.admin-report-sub-matrix-type {
+    min-width: 10rem;
+}
+
+.admin-report-sub-matrix-row--area th {
+    background: rgba(122, 62, 177, 0.04);
+    font-style: italic;
+}
+
+.admin-report-sub-matrix-cell {
+    min-width: 11rem;
+}
+
+.admin-report-sub-cell-summary {
+    display: grid;
+    gap: 0.2rem;
+    margin-bottom: 0.55rem;
+}
+
+.admin-report-sub-cell-summary--off {
+    opacity: 0.55;
+}
+
+.admin-report-sub-cell-meta {
+    display: block;
+    font-size: 0.78rem;
+    line-height: 1.35;
+    color: rgba(0, 0, 0, 0.58);
+}
+
+.admin-report-sub-cell-toggle {
+    margin-bottom: 0.15rem;
+}
+
+.admin-report-sub-cell-status {
+    display: inline-block;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: rgba(0, 0, 0, 0.72);
+}
+
+.admin-report-sub-cell-status--off {
+    opacity: 0.55;
+}
+
+.admin-report-sub-setup-btn {
+    width: 100%;
+    max-width: 8rem;
+}
+
+.admin-report-sub-setup-modal .admin-report-sub-setup-scope {
+    margin: 0 0 0.25rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.admin-report-sub-setup-modal .admin-report-sub-form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+    gap: 0.75rem 1rem;
+    margin: 1rem 0;
+}
+
+.admin-report-sub-setup-modal .admin-report-sub-form-grid label[hidden] {
+    display: none !important;
+}
+
+.admin-report-sub-setup-modal .admin-report-sub-form-grid label {
+    display: grid;
+    gap: 0.3rem;
+    font-size: 0.84rem;
+    font-weight: 600;
+}
+
+.admin-report-sub-setup-modal .admin-report-sub-form-grid label input {
+    width: 100%;
+    box-sizing: border-box;
+    font: inherit;
+    font-weight: 400;
+}
+
+.admin-report-sub-setup-modal .admin-report-sub-form-grid label select {
+    width: 100%;
+    box-sizing: border-box;
+    font: inherit;
+    font-weight: 400;
+}
+
+.admin-report-sub-setup-actions {
+    flex-wrap: wrap;
+}
+
+.admin-report-sub-setup-delete {
+    margin-right: auto;
+}
+
+.admin-report-sub-setup-status {
+    margin: 0.5rem 0 0.75rem;
+}
+
+.admin-report-sub-setup-area-stores {
+    margin: 0.25rem 0 0.75rem;
+}
+
+.admin-report-sub-setup-area-stores-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 1rem;
+}
+
+.admin-report-sub-stores-picker-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.admin-report-sub-stores-picker-list {
+    list-style: none;
+    margin: 0 0 1rem;
+    padding: 0;
+    max-height: min(50vh, 420px);
+    overflow-y: auto;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.65);
+}
+
+.admin-report-sub-stores-picker-item + .admin-report-sub-stores-picker-item {
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.admin-report-sub-stores-picker-label {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.65rem 0.75rem;
+    cursor: pointer;
+}
+
+.admin-report-sub-stores-picker-label input {
+    flex-shrink: 0;
+}
+
+html.mic-dark-mode .admin-report-sub-stores-picker-list {
+    border-color: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+html.mic-dark-mode .admin-report-sub-stores-picker-item + .admin-report-sub-stores-picker-item {
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.admin-report-sub-send-modal .admin-report-sub-send-recipients-label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin: 0.75rem 0 0.35rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+}
+
+.admin-report-sub-send-modal .admin-report-sub-send-recipients-label input {
+    font-weight: 400;
+}
+
+.admin-report-sub-send-hint {
+    margin: 0 0 0.75rem;
+}
+
+.admin-report-sub-status-list {
+    margin: 0.35rem 0 0;
+    padding-left: 1.1rem;
+    font-size: 0.84rem;
+}
+
+.admin-report-sub-status-item {
+    margin-bottom: 0.2rem;
+}
+
+.admin-report-sub-status-item.admin-report-sub-status--warn {
+    color: #b42318;
+}
+
+html.mic-dark-mode .admin-report-sub-matrix-wrap {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+html.mic-dark-mode .admin-report-sub-matrix th,
+html.mic-dark-mode .admin-report-sub-matrix td {
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+html.mic-dark-mode .admin-report-sub-matrix thead th {
+    background: rgba(122, 62, 177, 0.14);
+}
+
+html.mic-dark-mode .admin-report-sub-cell-meta {
+    color: rgba(255, 255, 255, 0.55);
+}
+
+html.mic-dark-mode .admin-report-sub-cell-status {
+    color: rgba(255, 255, 255, 0.78);
+}
+
+.admin-report-sub-progress-modal .admin-report-sub-progress-status {
+    margin: 0 0 0.75rem;
+    font-size: 0.95rem;
+}
+
+.admin-report-sub-progress-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.admin-report-sub-progress-actions-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 0.5rem;
+}
+
+.admin-report-sub-progress-actions-row--primary {
+    width: 100%;
+}
+
+.admin-report-sub-progress-actions-row--primary .mic-settings-btn {
+    flex: 1 1 0;
+    min-width: 9rem;
+}
+
+.admin-report-sub-progress-actions > #admin-report-sub-progress-close {
+    align-self: flex-start;
+}
+
+.admin-report-sub-progress-status--ok {
+    color: #0d7a3b;
+}
+
+.admin-report-sub-progress-log-wrap {
+    height: min(50vh, 420px);
+    overflow-y: auto;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.03);
+    margin-bottom: 1rem;
+}
+
+.admin-report-sub-progress-log {
+    list-style: none;
+    margin: 0;
+    padding: 0.75rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.82rem;
+    line-height: 1.45;
+}
+
+.admin-report-sub-progress-line {
+    padding: 0.15rem 0;
+    color: inherit;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.admin-report-sub-progress-line--ok {
+    color: #0d7a3b;
+}
+
+.admin-report-sub-progress-line--warn {
+    color: #9a6700;
+}
+
+.admin-report-sub-progress-line--error {
+    color: #b42318;
+}
+
+html.mic-dark-mode .admin-report-sub-progress-log-wrap {
+    border-color: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+html.mic-dark-mode .admin-report-sub-progress-line--ok {
+    color: #6ee7a0;
+}
+
+html.mic-dark-mode .admin-report-sub-progress-line--warn {
+    color: #fbbf24;
+}
+
+html.mic-dark-mode .admin-report-sub-progress-line--error {
+    color: #fca5a5;
+}
+
+html.mic-dark-mode .admin-modal-success,
+html.mic-dark-mode .admin-report-sub-progress-status--ok {
+    color: #6ee7a0;
+}
+
+/* Live logs */
+.admin-live-logs-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1rem;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0 0 0.75rem;
+}
+
+.admin-live-logs-sources,
+.admin-live-logs-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.admin-live-logs-source,
+.admin-live-logs-action {
+    appearance: none;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    background: rgba(255, 255, 255, 0.7);
+    color: inherit;
+    font: inherit;
+    font-size: 0.8125rem;
+    padding: 0.35rem 0.7rem;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.admin-live-logs-source.is-active,
+.admin-live-logs-action.is-active {
+    border-color: rgba(122, 62, 177, 0.45);
+    background: rgba(122, 62, 177, 0.12);
+    color: #5b2d86;
+    font-weight: 600;
+}
+
+.admin-live-logs-status {
+    margin: 0 0 0.65rem;
+    font-size: 0.8125rem;
+    color: rgba(0, 0, 0, 0.55);
+}
+
+.admin-live-logs-status[data-level='ok'] {
+    color: #067647;
+}
+
+.admin-live-logs-status[data-level='warn'] {
+    color: #9a6700;
+}
+
+.admin-live-logs-status[data-level='error'] {
+    color: #b42318;
+}
+
+.admin-live-logs-output {
+    height: min(62vh, 560px);
+    overflow: auto;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    background: #12141a;
+    color: #d7dce5;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.75rem;
+    line-height: 1.45;
+    padding: 0.65rem 0.75rem;
+}
+
+.admin-live-logs-line {
+    display: grid;
+    grid-template-columns: 4.75rem minmax(7.5rem, max-content) 1fr;
+    gap: 0.55rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.admin-live-logs-line + .admin-live-logs-line {
+    margin-top: 0.15rem;
+}
+
+.admin-live-logs-time {
+    color: #6b7385;
+    font-variant-numeric: tabular-nums;
+    user-select: none;
+}
+
+.admin-live-logs-tag {
+    color: #9aa3b5;
+    user-select: none;
+}
+
+.admin-live-logs-line--error .admin-live-logs-text {
+    color: #ffb4a9;
+}
+
+.admin-live-logs-line--hist {
+    opacity: 0.78;
+}
+
+html.mic-dark-mode .admin-live-logs-source,
+html.mic-dark-mode .admin-live-logs-action {
+    border-color: rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+html.mic-dark-mode .admin-live-logs-source.is-active,
+html.mic-dark-mode .admin-live-logs-action.is-active {
+    border-color: rgba(186, 140, 230, 0.5);
+    background: rgba(122, 62, 177, 0.28);
+    color: #e8d6ff;
+}
+
+html.mic-dark-mode .admin-live-logs-status {
+    color: rgba(255, 255, 255, 0.55);
+}
+
+html.mic-dark-mode .admin-live-logs-status[data-level='ok'] {
+    color: #6ee7a0;
+}
+
+html.mic-dark-mode .admin-live-logs-status[data-level='warn'] {
+    color: #fbbf24;
+}
+
+html.mic-dark-mode .admin-live-logs-status[data-level='error'] {
+    color: #fca5a5;
+}
