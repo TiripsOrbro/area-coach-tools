@@ -1,6 +1,6 @@
 ﻿const crypto = require('crypto');
 const fs = require('fs');
-const puppeteer = require('puppeteer');
+const puppeteer = require('../../src/puppeteerCompat');
 const {
     throwIfSalesScrapeAborted,
     isSalesScrapeAbortRequested,

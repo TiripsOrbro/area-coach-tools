@@ -184,7 +184,7 @@ function dayHtml(storeNumber, weekday, hourly, ise) {
 }
 
 async function renderPdf(html, outFile) {
-    const puppeteer = require('puppeteer');
+    const puppeteer = require('../../../src/puppeteerCompat');
     const browser = await puppeteer.launch({
         headless: true,
         args: ['--no-sandbox', '--disable-setuid-sandbox'],

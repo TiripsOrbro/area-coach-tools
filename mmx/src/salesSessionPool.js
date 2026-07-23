@@ -3,7 +3,7 @@
  * One Chromium process, one isolated context per store, labour + scheduled-orders pages, per-store lock.
  */
 
-const puppeteer = require('puppeteer');
+const puppeteer = require('../../src/puppeteerCompat');
 const { trackBrowser, closeBrowserQuietly } = require('./browserLifecycle');
 const {
     throwIfSalesScrapeAborted,

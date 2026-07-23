@@ -1,4 +1,4 @@
-const puppeteer = require('puppeteer');
+const puppeteer = require('../../src/puppeteerCompat');
 const { pasteIntoSelector } = require('./lifelenzInput');
 
 const { getPuppeteerLaunchOptions } = require('../../mmx/src/macromatixScraper');
