@@ -28,7 +28,8 @@ $ErrorActionPreference = 'Stop'
 $NodeMinMajor = 18
 
 function Write-Step([string]$Message) {
-    Write-Host "`n==> $Message" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "==> $Message" -ForegroundColor Cyan
 }
 
 function Assert-Command([string]$Name) {
@@ -107,21 +108,23 @@ function Write-LauncherScripts {
     $updatePath = Join-Path $Dir 'Update-AreaCoachTools.cmd'
     $ps1Name = 'Install-AreaCoachTools.ps1'
 
-    @"
-@echo off
-setlocal
-cd /d "%~dp0"
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0$ps1Name" -InstallDir "%~dp0." -Quiet -Launch
-exit /b %ERRORLEVEL%
-"@ | Set-Content -Encoding ASCII -Path $launchPath
+    $launchBody = @(
+        '@echo off'
+        'setlocal'
+        'cd /d "%~dp0"'
+        "powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"%~dp0$ps1Name`" -InstallDir `"%~dp0.`" -Quiet -Launch"
+        'exit /b %ERRORLEVEL%'
+    ) -join "`r`n"
+    Set-Content -Encoding ASCII -Path $launchPath -Value $launchBody
 
-    @"
-@echo off
-setlocal
-cd /d "%~dp0"
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0$ps1Name" -InstallDir "%~dp0." -Quiet -NoLaunch
-exit /b %ERRORLEVEL%
-"@ | Set-Content -Encoding ASCII -Path $updatePath
+    $updateBody = @(
+        '@echo off'
+        'setlocal'
+        'cd /d "%~dp0"'
+        "powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"%~dp0$ps1Name`" -InstallDir `"%~dp0.`" -Quiet -NoLaunch"
+        'exit /b %ERRORLEVEL%'
+    ) -join "`r`n"
+    Set-Content -Encoding ASCII -Path $updatePath -Value $updateBody
 
     return $launchPath
 }
@@ -138,7 +141,7 @@ function New-AppShortcuts {
         $sc = $wsh.CreateShortcut($lnk)
         $sc.TargetPath = $TargetCmd
         $sc.WorkingDirectory = $WorkDir
-        $sc.Description = 'Area Coach Tools — pull latest from Git, then launch'
+        $sc.Description = 'Area Coach Tools - pull latest from Git, then launch'
         $sc.Save()
     }
 }
@@ -158,7 +161,7 @@ try {
     Write-Step 'Configuring .env'
     if (-not (Test-Path '.env') -and (Test-Path '.env.example')) {
         Copy-Item '.env.example' '.env'
-        Write-Host 'Created .env from .env.example — edit STORE_* paths and secrets as needed.'
+        Write-Host 'Created .env from .env.example - edit STORE_* paths and secrets as needed.'
     }
 
     Write-Step 'npm install (server)'
@@ -176,7 +179,7 @@ try {
     Write-Host ''
     Write-Host 'Install complete.' -ForegroundColor Green
     Write-Host "Folder: $InstallDir"
-    Write-Host 'Shortcuts: Desktop + Start Menu → Area Coach Tools'
+    Write-Host 'Shortcuts: Desktop + Start Menu -> Area Coach Tools'
     Write-Host 'Each launch runs a Git update first, then starts the desktop app.'
 
     $shouldLaunch = $false
