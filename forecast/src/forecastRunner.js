@@ -202,7 +202,7 @@ async function submitPlanToPortals(storeNumber, plan, { mmx = true, lifelenz = t
 }
 
 async function runForecastForStore(storeNumber, options = {}) {
-    const weeks = Math.max(1, Math.min(4, Number(options.weeks || 3) || 3));
+    const weeks = Math.max(1, Math.min(5, Number(options.weeks || SUBMIT_WEEKS) || SUBMIT_WEEKS));
     const runId = `${storeNumber}-${Date.now()}`;
     const cfg = readConfig();
     const { dates, weekKeys } = datesForWeeks(weeks);
@@ -255,31 +255,71 @@ async function runForecastForStores(storeNumbers, options = {}) {
     return results;
 }
 
-async function backfillHistoryFromMmx(storeNumber, days = 35) {
+const BACKFILL_DAYS = 35; // always 5 weeks
+const SUBMIT_WEEKS = 3;
+
+async function backfillHistoryFromMmx(storeNumber, days = BACKFILL_DAYS) {
+    const daysBack = Math.max(7, Number(days) || BACKFILL_DAYS);
+    const logs = [];
     try {
         const forecastScraper = require('../../mmx/src/forecast/forecastScraper');
-        if (typeof forecastScraper.backfillStoreHistoryFromMmx === 'function') {
-            const result = await forecastScraper.backfillStoreHistoryFromMmx(storeNumber, { days });
-            if (Array.isArray(result?.days)) {
-                for (const row of result.days) {
-                    if (row?.dateKey && Array.isArray(row.actual)) {
-                        upsertDay(storeNumber, row.dateKey, row.actual, { source: 'mmx-backfill' });
-                    }
+        if (typeof forecastScraper.backfillStoreHistoryFromMmx !== 'function') {
+            return {
+                ok: false,
+                storeNumber: String(storeNumber),
+                error: 'backfillStoreHistoryFromMmx not available on forecast scraper.',
+                logs: ['ERROR: backfill function missing on forecast scraper.'],
+            };
+        }
+        const result = await forecastScraper.backfillStoreHistoryFromMmx(storeNumber, {
+            days: daysBack,
+            daysBack,
+            onProgress: (ev) => {
+                if (ev?.message) logs.push(String(ev.message));
+            },
+        });
+        // Ensure days land in the greenfield history store used by planEngine
+        if (Array.isArray(result?.days)) {
+            for (const row of result.days) {
+                if (row?.dateKey && Array.isArray(row.actual)) {
+                    upsertDay(storeNumber, row.dateKey, row.actual, { source: 'mmx-backfill' });
                 }
             }
-            return { ok: true, storeNumber, ...result, localDays: recentDays(storeNumber, days).length };
         }
+        const localDays = recentDays(storeNumber, daysBack).length;
+        const mergedLogs = [...(result.logs || []), ...logs];
+        if (result.ok === false) {
+            return {
+                ok: false,
+                storeNumber: String(storeNumber),
+                imported: result.imported || 0,
+                localDays,
+                daysBack,
+                error: result.error || 'Backfill failed',
+                logs: mergedLogs.length
+                    ? mergedLogs
+                    : [`Store ${storeNumber}: backfill failed — ${result.error || 'unknown error'}`],
+            };
+        }
+        mergedLogs.push(
+            `Store ${storeNumber}: backfill finished — imported ${result.imported || 0} day(s), history now ${localDays} day(s).`
+        );
         return {
-            ok: false,
-            storeNumber,
-            error: 'backfillStoreHistoryFromMmx not available on forecast scraper.',
+            ok: true,
+            storeNumber: String(storeNumber),
+            imported: result.imported || 0,
+            localDays,
+            daysBack,
+            logs: mergedLogs,
         };
     } catch (err) {
-        return { ok: false, storeNumber, error: err.message || String(err) };
+        const message = err.message || String(err);
+        logs.push(`Store ${storeNumber}: ERROR — ${message}`);
+        return { ok: false, storeNumber: String(storeNumber), error: message, logs, daysBack };
     }
 }
 
-async function backfillStores(storeNumbers, days = 35) {
+async function backfillStores(storeNumbers, days = BACKFILL_DAYS) {
     const results = [];
     for (const store of storeNumbers) {
         results.push(await backfillHistoryFromMmx(store, days));
@@ -297,4 +337,6 @@ module.exports = {
     listRecentRuns,
     buildPlan,
     weekTotalsForStore,
+    BACKFILL_DAYS,
+    SUBMIT_WEEKS,
 };

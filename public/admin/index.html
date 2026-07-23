@@ -166,21 +166,15 @@
         <main>
             <section id="forecast" class="active">
                 <h2>Forecast</h2>
-                <p class="sub">Compact per-store submit. Uses your coach MMX / LifeLenz credentials.</p>
+                <p class="sub">Backfill pulls 5 weeks of MMX hourly sales, drops high/low hour outliers, then averages. Submit uses your coach credentials.</p>
                 <div class="card row actions">
-                    <label>Duration
-                        <select id="fc-weeks" style="margin-left:6px">
-                            <option value="3" selected>3 weeks</option>
-                            <option value="2">2 weeks</option>
-                            <option value="1">1 week</option>
-                        </select>
-                    </label>
                     <button id="fc-update-area" class="action">Update area</button>
-                    <button id="fc-backfill-area" class="action">Backfill area</button>
+                    <button id="fc-backfill-area" class="action">Backfill area (5 weeks)</button>
                     <button id="fc-refresh" class="action">Refresh</button>
                 </div>
                 <div class="card" id="fc-status">Loading…</div>
                 <div class="msg" id="fc-msg"></div>
+                <pre class="card" id="fc-log" style="white-space:pre-wrap;font-size:12px;max-height:220px;overflow:auto;margin:0">Backfill / submit logs appear here.</pre>
             </section>
 
             <section id="buildto">

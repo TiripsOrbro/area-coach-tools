@@ -2005,26 +2005,50 @@ async function writeForecastPlanToMmx(storeNumber, plan, options = {}) {
 
 /** Optional MMX backfill for missing history days (slow - use import when possible). */
 async function backfillStoreHistoryFromMmx(storeNumber, options = {}) {
-    const { recordForecastHistoryDay } = require('../../../dashboard/src/forecast/forecastHistoryLedger');
+    const { upsertDay } = require('../../../forecast/src/historyStore');
+    const { addDaysIso, melbourneToday } = require('../../../forecast/src/planEngine');
+    let recordForecastHistoryDay = null;
+    let sumHourlyLedger = null;
+    try {
+        const ledger = require('../../../dashboard/src/forecast/forecastHistoryLedger');
+        recordForecastHistoryDay = ledger.recordForecastHistoryDay;
+        sumHourlyLedger = ledger.sumHourly;
+    } catch {
+        /* ledger optional */
+    }
+    const sumHourly = (values) =>
+        typeof sumHourlyLedger === 'function'
+            ? sumHourlyLedger(values)
+            : (Array.isArray(values) ? values : []).reduce((s, v) => s + (Number(v) || 0), 0);
+
     const LABOUR_URL =
         'https://tacobellau.macromatix.net/MMS_Stores_LabourScheduler.aspx?MenuCustomItemID=249';
     const scraper = getMacromatixScraper();
     const store = String(storeNumber || '').trim();
-    const daysBack = Number(options.daysBack) || 35;
+    // Accept days or daysBack; default 5 weeks
+    const daysBack = Math.max(7, Number(options.daysBack || options.days || 35) || 35);
     const credentials = scraper.resolveMacromatixCredentialsForStore(store);
     if (!credentials?.username || !credentials?.password) {
-        throw new Error(`No Macromatix credentials configured for store ${store}.`);
+        throw new Error(
+            `No Macromatix credentials for store ${store}. Set MMX login in Account (Ash/Tom).`
+        );
     }
 
-    const { addDaysToIso, sumHourly } = require('../../../dashboard/src/forecast/forecastHistoryLedger');
-    const melbourneTodayIso = () =>
-        new Intl.DateTimeFormat('en-CA', {
-            timeZone: process.env.DASHBOARD_TIME_ZONE || 'Australia/Melbourne',
-        }).format(new Date());
+    const onProgress = typeof options.onProgress === 'function' ? options.onProgress : null;
+    const logs = [];
+    const pushLog = (message) => {
+        const line = String(message || '').trim();
+        if (!line) return;
+        logs.push(line);
+        console.log(`[Forecast backfill ${store}] ${line}`);
+        onProgress?.({ storeNumber: store, message: line });
+    };
 
     let browser;
     let imported = 0;
+    const days = [];
     try {
+        pushLog(`Starting MMX backfill for last ${daysBack} days (5 weeks)…`);
         const opened = await scraper.openMacromatixBrowser({
             storeNumber: store,
             mmxUsername: credentials.username,
@@ -2036,33 +2060,58 @@ async function backfillStoreHistoryFromMmx(storeNumber, options = {}) {
         await page.goto(LABOUR_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
         await scraper.selectStoreOnPage(page, store, { waitMs: 900 });
 
-        const today = melbourneTodayIso();
+        const today = melbourneToday();
         const missingDates = [];
         for (let offset = 1; offset <= daysBack; offset += 1) {
-            missingDates.push(addDaysToIso(today, -offset));
+            missingDates.push(addDaysIso(today, -offset));
         }
+        pushLog(`Scraping ${missingDates.length} day(s) from labour scheduler…`);
         const scraped = await scraper.scrapeMissingHistoricalDays(page, missingDates, {
             timeZone: process.env.DASHBOARD_TIME_ZONE || 'Australia/Melbourne',
+            onProgress: (ev) => {
+                if (ev?.message) pushLog(ev.message);
+            },
         });
         for (const data of scraped) {
             const iso = data.dateIso;
             if (!iso) continue;
             const actualRaw = data.actual || [];
-            if (sumHourly(actualRaw) <= 0) continue;
-            recordForecastHistoryDay(
-                store,
-                iso,
-                {
-                    actualRaw,
-                    actualFormat: 'raw-mmx',
-                    openHour: options.openHour,
-                    closeHour: options.closeHour,
-                },
-                { source: 'mmx-backfill', finalized: true, force: Boolean(options.force) }
-            );
+            const total = sumHourly(actualRaw);
+            if (total <= 0) continue;
+            upsertDay(store, iso, actualRaw, { source: 'mmx-backfill' });
+            if (typeof recordForecastHistoryDay === 'function') {
+                try {
+                    recordForecastHistoryDay(
+                        store,
+                        iso,
+                        {
+                            actualRaw,
+                            actualFormat: 'raw-mmx',
+                            openHour: options.openHour,
+                            closeHour: options.closeHour,
+                        },
+                        { source: 'mmx-backfill', finalized: true, force: Boolean(options.force) }
+                    );
+                } catch {
+                    /* ignore ledger write errors */
+                }
+            }
+            days.push({ dateKey: iso, actual: actualRaw, total });
             imported += 1;
         }
-        return { storeNumber: store, imported };
+        pushLog(`Imported ${imported} day(s) with sales into forecast history.`);
+        return { ok: true, storeNumber: store, imported, days, logs, daysBack };
+    } catch (err) {
+        pushLog(`ERROR: ${err.message || String(err)}`);
+        return {
+            ok: false,
+            storeNumber: store,
+            imported,
+            days,
+            logs,
+            daysBack,
+            error: err.message || String(err),
+        };
     } finally {
         await scraper.closeBrowserQuietly(browser, 'forecast backfill');
     }

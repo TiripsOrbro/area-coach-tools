@@ -37,6 +37,20 @@
         el.innerHTML = text ? `<span class="${ok ? 'ok' : 'bad'}">${text}</span>` : '';
     }
 
+    function appendFcLog(lines) {
+        const el = document.getElementById('fc-log');
+        if (!el) return;
+        const stamp = new Date().toLocaleTimeString();
+        const block = (Array.isArray(lines) ? lines : [lines])
+            .filter(Boolean)
+            .map((l) => `[${stamp}] ${l}`)
+            .join('\n');
+        if (!block) return;
+        const prev = el.textContent === 'Backfill / submit logs appear here.' ? '' : el.textContent;
+        el.textContent = prev ? `${prev}\n${block}` : block;
+        el.scrollTop = el.scrollHeight;
+    }
+
     async function loadForecast() {
         const el = document.getElementById('fc-status');
         try {
@@ -100,39 +114,65 @@
         }
     }
 
-    function weeks() {
-        return Number(document.getElementById('fc-weeks').value || 3);
-    }
-
     async function runForecastStores(storeNumbers, all) {
         setMsg('fc-msg', 'Submitting…', true);
+        appendFcLog(all ? 'Update area — submitting all stores…' : `Submitting store(s): ${(storeNumbers || []).join(', ')}`);
         try {
-            const body = all
-                ? { all: true, weeks: weeks() }
-                : { storeNumbers, weeks: weeks() };
+            const body = all ? { all: true } : { storeNumbers };
             const data = await api('/api/admin/forecast/run', {
                 method: 'POST',
                 body: JSON.stringify(body),
             });
-            setMsg('fc-msg', `Done (${(data.results || []).length} store(s)).`, true);
+            const n = (data.results || []).length;
+            setMsg('fc-msg', `Submit done (${n} store(s)).`, true);
+            appendFcLog(`Submit finished — ${n} store(s).`);
+            (data.results || []).forEach((r) => {
+                appendFcLog(
+                    `${r.storeNumber || '?'}: ${r.state || 'done'}${r.message ? ` — ${r.message}` : ''}`
+                );
+            });
             loadForecast();
         } catch (err) {
             setMsg('fc-msg', err.message, false);
+            appendFcLog(`Submit ERROR: ${err.message}`);
         }
     }
 
     async function backfillStores(storeNumbers, all) {
-        setMsg('fc-msg', 'Backfilling…', true);
+        setMsg('fc-msg', 'Backfilling 5 weeks from MMX…', true);
+        appendFcLog(
+            all
+                ? 'Backfill area — scraping last 5 weeks of hourly sales for all stores…'
+                : `Backfill store(s) ${(storeNumbers || []).join(', ')} — last 5 weeks…`
+        );
         try {
-            const body = all ? { all: true, days: 35 } : { storeNumbers, days: 35 };
-            await api('/api/admin/forecast/backfill', {
+            const body = all ? { all: true } : { storeNumbers };
+            const res = await fetch('/api/admin/forecast/backfill', {
                 method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body),
             });
-            setMsg('fc-msg', 'Backfill finished.', true);
+            const data = await res.json().catch(() => ({}));
+            const logs = data.logs || [];
+            logs.forEach((line) => appendFcLog(line));
+            (data.results || []).forEach((r) => {
+                if (!logs.length && r.logs) r.logs.forEach((line) => appendFcLog(line));
+                if (r.error && !(r.logs || []).some((l) => String(l).includes(r.error))) {
+                    appendFcLog(`${r.storeNumber}: ERROR — ${r.error}`);
+                }
+            });
+            const summary =
+                data.message ||
+                (data.success
+                    ? `Backfill finished — imported ${data.imported || 0} day(s).`
+                    : 'Backfill finished with errors.');
+            setMsg('fc-msg', summary, Boolean(data.success));
+            appendFcLog(summary);
+            if (!res.ok && !data.message) throw new Error(data.error || res.statusText);
             loadForecast();
         } catch (err) {
             setMsg('fc-msg', err.message, false);
+            appendFcLog(`Backfill ERROR: ${err.message}`);
         }
     }
 

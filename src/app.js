@@ -303,7 +303,7 @@ app.post('/api/admin/forecast/preview', async (req, res) => {
         if (!assertOwns(store, res)) return;
         const result = await forecastRunner.runForecastForStore(store, {
             previewOnly: true,
-            weeks: Number(req.body?.weeks || 3),
+            weeks: forecastRunner.SUBMIT_WEEKS,
         });
         res.json({ success: true, result });
     } catch (err) {
@@ -326,7 +326,7 @@ app.post('/api/admin/forecast/run', async (req, res) => {
         const results = await forecastRunner.runForecastForStores(stores, {
             mmx: req.body?.mmx !== false,
             lifelenz: req.body?.lifelenz !== false,
-            weeks: Number(req.body?.weeks || 3),
+            weeks: forecastRunner.SUBMIT_WEEKS,
         });
         res.json({ success: true, results });
         liveEvents.bump('forecast.updated');
@@ -346,9 +346,22 @@ app.post('/api/admin/forecast/backfill', async (req, res) => {
         res.status(400).json({ success: false, error: 'storeNumber(s) required' });
         return;
     }
-    const results = await forecastRunner.backfillStores(stores, Number(req.body?.days || 35));
+    // Always backfill 5 weeks of hourly sales history
+    const days = forecastRunner.BACKFILL_DAYS;
+    const results = await forecastRunner.backfillStores(stores, days);
+    const logs = results.flatMap((r) => r.logs || []);
     const ok = results.every((r) => r.ok);
-    res.status(ok ? 200 : 207).json({ success: ok, results });
+    const imported = results.reduce((s, r) => s + (Number(r.imported) || 0), 0);
+    res.status(ok ? 200 : 207).json({
+        success: ok,
+        days,
+        imported,
+        message: ok
+            ? `Backfill finished — ${imported} day(s) imported across ${results.length} store(s).`
+            : `Backfill finished with errors — check logs.`,
+        logs,
+        results,
+    });
 });
 
 app.get('/api/coach/session', (_req, res) => {

@@ -22,21 +22,31 @@ function melbourneToday(timeZone = process.env.DASHBOARD_TIME_ZONE || 'Australia
     return new Intl.DateTimeFormat('en-CA', { timeZone }).format(new Date());
 }
 
+/** Drop highest + lowest samples (when 3+), then average. */
+function trimmedMean(values) {
+    const nums = (values || []).map(Number).filter((v) => Number.isFinite(v));
+    if (!nums.length) return 0;
+    if (nums.length < 3) {
+        return Math.round(nums.reduce((s, v) => s + v, 0) / nums.length);
+    }
+    const sorted = [...nums].sort((a, b) => a - b);
+    const trimmed = sorted.slice(1, -1);
+    return Math.round(trimmed.reduce((s, v) => s + v, 0) / trimmed.length);
+}
+
+/** Per-hour trimmed average across peer days (removes high/low hour outliers). */
 function averageHourly(seriesList) {
     if (!seriesList.length) return [];
-    const len = Math.max(...seriesList.map((s) => s.length));
+    const len = Math.max(...seriesList.map((s) => (Array.isArray(s) ? s.length : 0)));
     const out = [];
     for (let i = 0; i < len; i++) {
-        let sum = 0;
-        let n = 0;
+        const hourValues = [];
         for (const series of seriesList) {
+            if (!Array.isArray(series)) continue;
             const v = Number(series[i]);
-            if (Number.isFinite(v)) {
-                sum += v;
-                n += 1;
-            }
+            if (Number.isFinite(v)) hourValues.push(v);
         }
-        out.push(n ? Math.round(sum / n) : 0);
+        out.push(trimmedMean(hourValues));
     }
     return out;
 }
@@ -53,6 +63,7 @@ function averageHourly(seriesList) {
 function buildPlan(options = {}) {
     const storeNumber = String(options.storeNumber || '').trim();
     const timeZone = options.timeZone || process.env.DASHBOARD_TIME_ZONE || 'Australia/Melbourne';
+    // Default: 5 weeks of history for weekday-hour averages
     const historyDays = Math.max(7, Number(options.historyDays || 35) || 35);
     const adjustments = options.adjustments && typeof options.adjustments === 'object' ? options.adjustments : {};
     const protectedSet = new Set(
@@ -112,4 +123,5 @@ module.exports = {
     addDaysIso,
     melbourneToday,
     averageHourly,
+    trimmedMean,
 };
