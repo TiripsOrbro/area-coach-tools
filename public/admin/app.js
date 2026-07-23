@@ -297,8 +297,32 @@
     document.getElementById('bt-run').addEventListener('click', () => runBuildTo('reports'));
     document.getElementById('bt-orders').addEventListener('click', () => runBuildTo('orders'));
 
-    function toggleBtn(on) {
-        return `<button type="button" class="toggle ${on ? 'on' : ''}" aria-pressed="${on}"></button>`;
+    function toggleBtn(on, kind, store) {
+        return `<button type="button" class="toggle daily-toggle ${on ? 'on' : ''}" aria-pressed="${on ? 'true' : 'false'}" title="${on ? 'On' : 'Off'} — click to toggle" data-kind="${kind}" data-store="${store}" data-on="${on ? '1' : '0'}"></button>`;
+    }
+
+    function formatDailyStamp(value) {
+        if (value == null || value === '') return '—';
+        if (typeof value === 'object') {
+            const iso = value.at || value.checkedAt || value.lastStockRun;
+            return iso ? fmtWhen(iso) : '—';
+        }
+        const s = String(value);
+        if (!s || s === 'null' || s === 'undefined') return '—';
+        if (/^\d{4}-\d{2}-\d{2}/.test(s)) return fmtWhen(s);
+        return s;
+    }
+
+    async function setDailyToggle(store, kind, nextOn) {
+        const body =
+            kind === 'stock'
+                ? { stores: [{ storeNumber: store, stockEnabled: nextOn }] }
+                : { stores: [{ storeNumber: store, forecastEnabled: nextOn }] };
+        await api('/api/admin/five-am-reports/stores', {
+            method: 'PUT',
+            body: JSON.stringify(body),
+        });
+        loadDaily();
     }
 
     async function loadDaily() {
@@ -319,6 +343,7 @@
                             <th>Forecast</th>
                             <th>Last forecast</th>
                             <th>Last stock run</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -326,57 +351,66 @@
                             .map(
                                 (s) => `<tr>
                             <td><strong>${s.storeNumber}</strong> <span style="color:var(--muted)">${s.storeName || ''}</span></td>
-                            <td>${toggleBtn(s.stockEnabled)} <button class="action tiny daily-stock" data-store="${s.storeNumber}" data-on="${s.stockEnabled ? '0' : '1'}">${s.stockEnabled ? 'On' : 'Off'}</button></td>
-                            <td>${toggleBtn(s.forecastEnabled)} <button class="action tiny daily-fc" data-store="${s.storeNumber}" data-on="${s.forecastEnabled ? '0' : '1'}">${s.forecastEnabled ? 'On' : 'Off'}</button></td>
-                            <td>${s.lastForecastAt || '—'}</td>
-                            <td>${typeof s.lastStockRun === 'object' ? s.lastStockRun?.at || JSON.stringify(s.lastStockRun) : s.lastStockRun || '—'}</td>
+                            <td>${toggleBtn(Boolean(s.stockEnabled), 'stock', s.storeNumber)}</td>
+                            <td>${toggleBtn(Boolean(s.forecastEnabled), 'forecast', s.storeNumber)}</td>
+                            <td>${formatDailyStamp(s.lastForecastAt)}</td>
+                            <td>${formatDailyStamp(s.lastStockRun)}</td>
+                            <td>
+                                <button type="button" class="action tiny daily-check-one" data-store="${s.storeNumber}" title="Check current levels for this store">Check</button>
+                            </td>
                         </tr>`
                             )
                             .join('')}
                     </tbody>
                 </table>`;
-            el.querySelectorAll('.daily-stock').forEach((btn) => {
+            el.querySelectorAll('.daily-toggle').forEach((btn) => {
                 btn.addEventListener('click', async () => {
-                    await api('/api/admin/five-am-reports/stores', {
-                        method: 'PUT',
-                        body: JSON.stringify({
-                            stores: [{ storeNumber: btn.dataset.store, stockEnabled: btn.dataset.on === '1' }],
-                        }),
-                    });
-                    loadDaily();
+                    const nextOn = btn.dataset.on !== '1';
+                    btn.disabled = true;
+                    try {
+                        await setDailyToggle(btn.dataset.store, btn.dataset.kind, nextOn);
+                    } catch (err) {
+                        setMsg('daily-msg', err.message, false);
+                        btn.disabled = false;
+                    }
                 });
             });
-            el.querySelectorAll('.daily-fc').forEach((btn) => {
-                btn.addEventListener('click', async () => {
-                    await api('/api/admin/five-am-reports/stores', {
-                        method: 'PUT',
-                        body: JSON.stringify({
-                            stores: [
-                                {
-                                    storeNumber: btn.dataset.store,
-                                    forecastEnabled: btn.dataset.on === '1',
-                                },
-                            ],
-                        }),
-                    });
-                    loadDaily();
-                });
+            el.querySelectorAll('.daily-check-one').forEach((btn) => {
+                btn.addEventListener('click', () => checkCurrentLevels([btn.dataset.store], btn));
             });
         } catch (err) {
             el.innerHTML = `<span class="bad">${err.message}</span>`;
         }
     }
 
-    document.getElementById('daily-refresh').addEventListener('click', loadDaily);
-    document.getElementById('daily-run').addEventListener('click', async () => {
-        const el = document.getElementById('daily-list');
+    async function checkCurrentLevels(storeNumbers, btn) {
+        setMsg('daily-msg', 'Checking current levels…', true);
+        if (btn) btn.disabled = true;
         try {
-            const data = await api('/api/admin/daily-reports/run', { method: 'POST', body: '{}' });
-            el.insertAdjacentHTML('afterbegin', `<pre style="font-size:12px">${JSON.stringify(data, null, 2)}</pre>`);
+            const body = storeNumbers?.length ? { storeNumbers } : {};
+            const data = await api('/api/admin/daily-reports/run', {
+                method: 'POST',
+                body: JSON.stringify(body),
+            });
+            const okCount = (data.results || []).filter((r) => r.ok).length;
+            const fail = (data.results || []).filter((r) => !r.ok);
+            setMsg(
+                'daily-msg',
+                fail.length
+                    ? `Checked ${okCount}; ${fail.length} failed (${fail.map((f) => f.storeNumber).join(', ')}).`
+                    : data.message || `Checked ${okCount} store(s).`,
+                !fail.length
+            );
+            loadDaily();
         } catch (err) {
-            el.insertAdjacentHTML('afterbegin', `<p class="bad">${err.message}</p>`);
+            setMsg('daily-msg', err.message, false);
+        } finally {
+            if (btn) btn.disabled = false;
         }
-    });
+    }
+
+    document.getElementById('daily-refresh').addEventListener('click', loadDaily);
+    document.getElementById('daily-run').addEventListener('click', () => checkCurrentLevels());
 
     function renderPrepTabs() {
         const tabs = document.getElementById('pg-tabs');

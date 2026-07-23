@@ -105,7 +105,8 @@ app.get('/api/admin/five-am-reports/stores', (_req, res) => {
                 storeName: s.storeName,
                 stockEnabled: fiveAm.isStoreEnabled(storeNumber),
                 forecastEnabled: forecastConfig.isAutoSubmitEnabled(storeNumber),
-                lastStockRun: status.lastRun?.[storeNumber] || status.lastRunAt?.[storeNumber] || null,
+                lastStockRun:
+                    status.lastRunAt?.[storeNumber] || status.lastRun?.[storeNumber] || null,
                 lastForecastAt: fc.lastForecastAt || null,
             };
         }),
@@ -113,36 +114,60 @@ app.get('/api/admin/five-am-reports/stores', (_req, res) => {
 });
 
 app.put('/api/admin/five-am-reports/stores', (req, res) => {
-    const updates = Array.isArray(req.body?.stores) ? req.body.stores : [];
+    const body = req.body || {};
+    const updates = Array.isArray(body.stores)
+        ? body.stores
+        : body.storeNumber || body.store
+          ? [
+                {
+                    storeNumber: body.storeNumber || body.store,
+                    stockEnabled: body.stockEnabled ?? body.enabled,
+                    forecastEnabled: body.forecastEnabled,
+                },
+            ]
+          : [];
+    const saved = [];
     for (const row of updates) {
         const store = String(row?.storeNumber || '').trim();
         if (!store || !coachOwnsStore(store)) continue;
         if (row.stockEnabled != null || row.enabled != null) {
             fiveAm.setStoreEnabled(store, Boolean(row.stockEnabled ?? row.enabled), 'area-coach-tools');
+            saved.push({ storeNumber: store, stockEnabled: fiveAm.isStoreEnabled(store) });
         }
         if (row.forecastEnabled != null) {
             forecastConfig.setAutoSubmit(store, Boolean(row.forecastEnabled));
+            saved.push({
+                storeNumber: store,
+                forecastEnabled: forecastConfig.isAutoSubmitEnabled(store),
+            });
         }
     }
-    res.json({ success: true });
+    res.json({ success: true, saved });
     liveEvents.bump('daily-reports.updated');
 });
 
 app.post('/api/admin/daily-reports/run', async (req, res) => {
     try {
-        const orchestrator = require('../dashboard/src/dailyReports/dailyReportsOrchestrator');
-        if (typeof orchestrator.runDailyReports !== 'function') {
-            res.status(501).json({ success: false, error: 'Daily reports orchestrator not available.' });
-            return;
-        }
+        const { checkCurrentLevelsForStores } = require('../dashboard/src/fiveAmReports/checkStockLevels');
         let storeNumbers = Array.isArray(req.body?.storeNumbers)
             ? filterOwned(req.body.storeNumbers)
-            : coachStores().map((s) => String(s.storeNumber));
-        const result = await orchestrator.runDailyReports({
-            reason: 'manual',
-            storeNumbers,
+            : req.body?.storeNumber
+              ? filterOwned([String(req.body.storeNumber)])
+              : coachStores().map((s) => String(s.storeNumber));
+        if (!storeNumbers.length) {
+            res.status(400).json({ success: false, error: 'No stores in coach scope.' });
+            return;
+        }
+        const results = await checkCurrentLevelsForStores(storeNumbers);
+        const ok = results.every((r) => r.ok);
+        res.status(ok ? 200 : 207).json({
+            success: ok,
+            message: ok
+                ? `Checked levels for ${results.length} store(s).`
+                : 'Finished with errors — see results.',
+            results,
         });
-        res.json({ success: true, result });
+        liveEvents.bump('daily-reports.updated');
     } catch (err) {
         res.status(500).json({ success: false, error: err.message || String(err) });
     }

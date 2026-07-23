@@ -127,6 +127,19 @@
             transition: left .15s;
         }
         .toggle.on::after { left: 18px; }
+        .icon-btn {
+            border: 1px solid rgba(192,132,252,.45);
+            background: rgba(192,132,252,.15);
+            color: var(--ink);
+            border-radius: 8px;
+            width: 32px; height: 28px;
+            cursor: pointer;
+            font-size: 14px;
+            line-height: 1;
+            padding: 0;
+        }
+        .icon-btn:hover { background: rgba(192,132,252,.28); }
+        .icon-btn:disabled { opacity: .5; cursor: wait; }
         .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
         .tabs button {
             border: 1px solid var(--line); background: transparent; color: var(--ink);
@@ -195,8 +208,9 @@
                 <p class="sub">Stock levels and forecast auto-submit for your stores.</p>
                 <div class="card row actions">
                     <button id="daily-refresh" class="action">Refresh</button>
-                    <button id="daily-run" class="action">Force stock run</button>
+                    <button id="daily-run" class="action">Check current levels</button>
                 </div>
+                <div class="msg" id="daily-msg"></div>
                 <div class="card" id="daily-list">Loading…</div>
             </section>
 
