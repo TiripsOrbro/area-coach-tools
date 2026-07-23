@@ -465,13 +465,18 @@
     document.getElementById('pg-refresh').addEventListener('click', loadPrep);
     document.getElementById('pg-regen').addEventListener('click', async () => {
         const store = document.getElementById('pg-store').value;
-        setMsg('pg-msg', 'Regenerating (Excel + PDFs)…', true);
+        setMsg('pg-msg', 'Fetching missing data + regenerating landscape Prep Guide PDFs…', true);
         try {
-            await api('/api/admin/prep-guides/regenerate', {
+            const data = await api('/api/admin/prep-guides/regenerate', {
                 method: 'POST',
                 body: JSON.stringify({ storeNumber: store }),
             });
-            setMsg('pg-msg', 'Regenerated.', true);
+            const logs = data.meta?.logs || [];
+            setMsg(
+                'pg-msg',
+                logs.length ? `Regenerated. ${logs.slice(-3).join(' · ')}` : 'Regenerated.',
+                true
+            );
             loadPrep();
         } catch (err) {
             setMsg('pg-msg', err.message, false);
