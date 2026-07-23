@@ -179,13 +179,15 @@
 
             <section id="buildto">
                 <h2>Build-to</h2>
-                <p class="sub">Edit the master workbook in Excel, then run automation against it.</p>
+                <p class="sub">Downloads On Hand, On Order, and ISE into your master workbook tabs (formatting untouched). Uses <code>Downloads\Build To Master File.xlsx</code>.</p>
                 <div class="card row actions">
                     <button id="bt-edit" class="action">Edit workbook</button>
-                    <button id="bt-run" class="action">Run build-to</button>
+                    <button id="bt-run" class="action">Update reports</button>
+                    <button id="bt-orders" class="action">Push MMX orders</button>
                     <button id="bt-refresh" class="action">Refresh</button>
                 </div>
                 <div class="card" id="bt-status">Loading…</div>
+                <div class="card" id="bt-stores">Loading stores…</div>
             </section>
 
             <section id="daily">

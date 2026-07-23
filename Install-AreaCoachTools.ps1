@@ -163,6 +163,14 @@ try {
         Copy-Item '.env.example' '.env'
         Write-Host 'Created .env from .env.example - edit STORE_* paths and secrets as needed.'
     }
+    $autoDir = 'Y:\Taco Bell Dashboard\mmx-report-automation'
+    if ((Test-Path $autoDir) -and (Test-Path '.env')) {
+        $envText = Get-Content '.env' -Raw
+        if ($envText -notmatch '(?m)^MMX_REPORT_AUTOMATION_DIR=') {
+            Add-Content '.env' "`nMMX_REPORT_AUTOMATION_DIR=$autoDir"
+            Write-Host "Set MMX_REPORT_AUTOMATION_DIR=$autoDir"
+        }
+    }
 
     Write-Step 'npm install (server)'
     npm install --no-fund --no-audit

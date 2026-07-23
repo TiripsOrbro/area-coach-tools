@@ -48,5 +48,15 @@ module.exports = {
     nsf: domain('nsf'),
     mmxReportAutomation:
         process.env.MMX_REPORT_AUTOMATION_DIR ||
-        path.join(root, '..', 'mmx-report-automation'),
+        (fsExists(path.join('Y:', 'Taco Bell Dashboard', 'mmx-report-automation'))
+            ? path.join('Y:', 'Taco Bell Dashboard', 'mmx-report-automation')
+            : path.join(root, '..', 'mmx-report-automation')),
 };
+
+function fsExists(p) {
+    try {
+        return require('fs').existsSync(p);
+    } catch {
+        return false;
+    }
+}

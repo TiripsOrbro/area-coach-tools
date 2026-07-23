@@ -180,25 +180,104 @@
     document.getElementById('fc-update-area').addEventListener('click', () => runForecastStores([], true));
     document.getElementById('fc-backfill-area').addEventListener('click', () => backfillStores([], true));
 
+    function fmtWhen(iso) {
+        if (!iso) return '—';
+        try {
+            return new Date(iso).toLocaleString();
+        } catch {
+            return iso;
+        }
+    }
+
     async function loadBuildTo() {
         const el = document.getElementById('bt-status');
+        const storesEl = document.getElementById('bt-stores');
         try {
             const data = await api('/api/admin/build-to/status');
             const last = data.lastRun;
             el.innerHTML = `
                 <p><strong>Workbook</strong><br><code style="font-size:.8rem">${data.workbookPath || '—'}</code>
-                ${data.workbookExists ? '<span class="ok"> · ready</span>' : '<span class="bad"> · missing</span>'}</p>
-                <p><strong>Automation</strong> ${data.automationExists ? '<span class="ok">found</span>' : '<span class="bad">missing</span>'}
+                ${data.workbookExists ? '<span class="ok"> · ready</span>' : '<span class="bad"> · missing</span>'}
+                ${data.workbookSource === 'downloads' ? ' · Downloads master' : ' · fallback copy'}</p>
+                <p><strong>Automation</strong> ${
+                    data.automationExists
+                        ? `<span class="ok">found</span><br><code style="font-size:.75rem">${data.automationDir || ''}</code>`
+                        : `<span class="bad">missing</span><br><span class="bad" style="font-size:.85rem">${data.hint || ''}</span>`
+                }
                 ${data.running ? ' · <span class="chip pending">running</span>' : ''}</p>
                 <p><strong>Last run</strong> ${
                     last
-                        ? `${last.ok ? '<span class="ok">ok</span>' : '<span class="bad">failed</span>'} · ${last.finishedAt || last.startedAt || ''}`
+                        ? `${last.ok ? '<span class="ok">ok</span>' : '<span class="bad">failed</span>'} · ${last.mode || 'reports'} · ${fmtWhen(last.finishedAt || last.startedAt)}`
                         : '—'
                 }</p>
                 ${last?.error ? `<p class="bad">${last.error}</p>` : ''}
                 ${last?.warnEmailSent ? '<p class="ok">Warn email sent to coach alert address.</p>' : ''}`;
+
+            const rows = data.stores || [];
+            if (!rows.length) {
+                storesEl.innerHTML = '<span class="bad">No stores in coach scope.</span>';
+            } else {
+                storesEl.innerHTML = `
+                    <table class="dense">
+                        <thead>
+                            <tr>
+                                <th>Store</th>
+                                <th>Build-to updated</th>
+                                <th>MMX orders updated</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows
+                                .map(
+                                    (s) => `<tr>
+                                <td><strong>${s.storeNumber}</strong> <span style="color:var(--muted)">${s.storeName || ''}</span>
+                                    ${s.lastError ? `<div class="bad" style="font-size:.75rem">${s.lastError}</div>` : ''}
+                                </td>
+                                <td class="${s.buildToUpdatedAt ? 'ok' : ''}">${fmtWhen(s.buildToUpdatedAt)}</td>
+                                <td class="${s.mmxOrdersUpdatedAt ? 'ok' : ''}">${fmtWhen(s.mmxOrdersUpdatedAt)}</td>
+                                <td>
+                                    <button class="action tiny bt-one-reports" data-store="${s.storeNumber}">Reports</button>
+                                    <button class="action tiny bt-one-orders" data-store="${s.storeNumber}">Orders</button>
+                                </td>
+                            </tr>`
+                                )
+                                .join('')}
+                        </tbody>
+                    </table>`;
+                storesEl.querySelectorAll('.bt-one-reports').forEach((btn) => {
+                    btn.addEventListener('click', () => runBuildTo('reports', [btn.dataset.store]));
+                });
+                storesEl.querySelectorAll('.bt-one-orders').forEach((btn) => {
+                    btn.addEventListener('click', () => runBuildTo('orders', [btn.dataset.store]));
+                });
+            }
         } catch (err) {
             el.innerHTML = `<span class="bad">${err.message}</span>`;
+            if (storesEl) storesEl.innerHTML = '';
+        }
+    }
+
+    async function runBuildTo(mode, storeNumbers) {
+        const el = document.getElementById('bt-status');
+        el.insertAdjacentHTML(
+            'afterbegin',
+            `<p>Starting ${mode === 'orders' ? 'MMX orders' : 'On Hand / On Order / ISE download'}…</p>`
+        );
+        try {
+            const body = storeNumbers?.length ? { mode, storeNumbers } : { mode };
+            const data = await api('/api/admin/build-to/run', {
+                method: 'POST',
+                body: JSON.stringify(body),
+            });
+            el.insertAdjacentHTML(
+                'afterbegin',
+                `<p class="${data.ok ? 'ok' : 'bad'}">${data.ok ? 'Finished.' : data.error || 'Failed.'}</p>`
+            );
+            loadBuildTo();
+        } catch (err) {
+            el.insertAdjacentHTML('afterbegin', `<p class="bad">${err.message}</p>`);
+            loadBuildTo();
         }
     }
 
@@ -215,16 +294,8 @@
             el.insertAdjacentHTML('afterbegin', `<p class="bad">${err.message}</p>`);
         }
     });
-    document.getElementById('bt-run').addEventListener('click', async () => {
-        const el = document.getElementById('bt-status');
-        el.innerHTML = 'Starting Excel build-to…';
-        try {
-            const data = await api('/api/admin/build-to/run', { method: 'POST', body: '{}' });
-            el.innerHTML = `<pre style="white-space:pre-wrap;font-size:12px">${JSON.stringify(data, null, 2)}</pre>`;
-        } catch (err) {
-            el.innerHTML = `<span class="bad">${err.message}</span>`;
-        }
-    });
+    document.getElementById('bt-run').addEventListener('click', () => runBuildTo('reports'));
+    document.getElementById('bt-orders').addEventListener('click', () => runBuildTo('orders'));
 
     function toggleBtn(on) {
         return `<button type="button" class="toggle ${on ? 'on' : ''}" aria-pressed="${on}"></button>`;

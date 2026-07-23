@@ -242,7 +242,15 @@ app.get('/api/admin/logs/download', (req, res) => {
 
 // Build-to Excel
 app.get('/api/admin/build-to/status', (_req, res) => {
-    res.json({ success: true, ...buildToExcel.getStatus(), running: buildToExcel.isRunning() });
+    const stores = coachStores().map((s) => ({
+        storeNumber: s.storeNumber,
+        storeName: s.storeName || '',
+    }));
+    res.json({
+        success: true,
+        ...buildToExcel.getStatus(stores),
+        running: buildToExcel.isRunning(),
+    });
 });
 
 app.post('/api/admin/build-to/open', async (_req, res) => {
@@ -252,15 +260,35 @@ app.post('/api/admin/build-to/open', async (_req, res) => {
 
 app.post('/api/admin/build-to/run', async (req, res) => {
     if (buildToExcel.isRunning()) {
-        res.status(409).json({ success: false, error: 'Build-to Excel run already in progress.' });
+        res.status(409).json({ success: false, error: 'Build-to run already in progress.' });
         return;
     }
-    let store = req.body?.store ? String(req.body.store).trim() : null;
-    if (store && !coachOwnsStore(store)) {
-        res.status(403).json({ success: false, error: 'Store not in your coach scope.' });
+    const mode = String(req.body?.mode || 'reports').toLowerCase() === 'orders' ? 'orders' : 'reports';
+    let stores = [];
+    if (Array.isArray(req.body?.storeNumbers) && req.body.storeNumbers.length) {
+        stores = filterOwned(req.body.storeNumbers).map((n) => {
+            const row = coachStores().find((s) => String(s.storeNumber) === String(n));
+            return { storeNumber: n, storeName: row?.storeName || '' };
+        });
+    } else if (req.body?.store) {
+        const store = String(req.body.store).trim();
+        if (!coachOwnsStore(store)) {
+            res.status(403).json({ success: false, error: 'Store not in your coach scope.' });
+            return;
+        }
+        const row = coachStores().find((s) => String(s.storeNumber) === store);
+        stores = [{ storeNumber: store, storeName: row?.storeName || '' }];
+    } else {
+        stores = coachStores().map((s) => ({
+            storeNumber: String(s.storeNumber),
+            storeName: s.storeName || '',
+        }));
+    }
+    if (!stores.length) {
+        res.status(400).json({ success: false, error: 'No stores in coach scope.' });
         return;
     }
-    const result = await buildToExcel.runExcelBuildTo({ store });
+    const result = await buildToExcel.runExcelBuildTo({ mode, stores });
     res.status(result.ok ? 200 : 500).json({ success: result.ok, ...result });
     liveEvents.bump('build-to.updated');
 });
