@@ -524,33 +524,33 @@ async function regenerateStore(storeNumber) {
         console.log(`[prep-guides ${store}] ${m}`);
     };
 
-    push('Ensuring sales history…');
+    push('Ensuring sales history...');
     const history = await ensureHistoryData(store);
     push(
         history.skipped
             ? `History ready (${history.days} days).`
             : history.ok
-              ? `Backfilled history — now ${history.days} days (imported ${history.imported || 0}).`
+              ? `Backfilled history - now ${history.days} days (imported ${history.imported || 0}).`
               : `History backfill issue: ${history.error || 'unknown'}`
     );
 
-    push('Ensuring ISE data…');
+    push('Ensuring ISE data...');
     const ise = await ensureIseData(store);
     push(
         ise.skipped
             ? 'ISE snapshots already present.'
             : ise.ok
               ? `ISE ready (${ise.snapshots || iseSnapshotCount(store)} snapshots).`
-              : `ISE fetch skipped/failed: ${ise.error || 'unknown'} — using workbook averages if available.`
+              : `ISE fetch skipped/failed: ${ise.error || 'unknown'} - using workbook averages if available.`
     );
 
-    push('Writing store workbook from Prep Guide template…');
+    push('Writing store workbook from Prep Guide template...');
     const workbookPath = await writeStoreWorkbook(store);
     const recalc = recalcWorkbook(workbookPath);
     push(
         recalc.ok
             ? 'Excel recalculated formulas.'
-            : `Excel recalc ${recalc.skipped ? 'skipped' : 'failed'} — using sheet values as available.`
+            : `Excel recalc ${recalc.skipped ? 'skipped' : 'failed'} - using sheet values as available.`
     );
 
     const dir = storeDir(store);
@@ -652,7 +652,7 @@ async function sendPrepGuideEmail(storeNumber, weekday) {
     const to = storeEmails.getEmail(storeNumber);
     if (!to) return { ok: false, skipped: true, reason: 'no email' };
     const file = pdfPath(storeNumber, weekday);
-    if (!file) return { ok: false, error: 'PDF missing — regenerate first' };
+    if (!file) return { ok: false, error: 'PDF missing - regenerate first' };
     const host = process.env.DASHBOARD_SMTP_HOST;
     if (!host) return { ok: false, error: 'DASHBOARD_SMTP_HOST not set' };
     const nodemailer = require('nodemailer');

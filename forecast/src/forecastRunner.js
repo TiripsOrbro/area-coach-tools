@@ -298,11 +298,11 @@ async function backfillHistoryFromMmx(storeNumber, days = BACKFILL_DAYS) {
                 error: result.error || 'Backfill failed',
                 logs: mergedLogs.length
                     ? mergedLogs
-                    : [`Store ${storeNumber}: backfill failed — ${result.error || 'unknown error'}`],
+                    : [`Store ${storeNumber}: backfill failed - ${result.error || 'unknown error'}`],
             };
         }
         mergedLogs.push(
-            `Store ${storeNumber}: backfill finished — imported ${result.imported || 0} day(s), history now ${localDays} day(s).`
+            `Store ${storeNumber}: backfill finished - imported ${result.imported || 0} day(s), history now ${localDays} day(s).`
         );
         return {
             ok: true,
@@ -314,7 +314,7 @@ async function backfillHistoryFromMmx(storeNumber, days = BACKFILL_DAYS) {
         };
     } catch (err) {
         const message = err.message || String(err);
-        logs.push(`Store ${storeNumber}: ERROR — ${message}`);
+        logs.push(`Store ${storeNumber}: ERROR - ${message}`);
         return { ok: false, storeNumber: String(storeNumber), error: message, logs, daysBack };
     }
 }

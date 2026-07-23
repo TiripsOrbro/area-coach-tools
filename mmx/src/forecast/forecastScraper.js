@@ -2048,7 +2048,7 @@ async function backfillStoreHistoryFromMmx(storeNumber, options = {}) {
     let imported = 0;
     const days = [];
     try {
-        pushLog(`Starting MMX backfill for last ${daysBack} days (5 weeks)…`);
+        pushLog(`Starting MMX backfill for last ${daysBack} days (5 weeks)...`);
         const opened = await scraper.openMacromatixBrowser({
             storeNumber: store,
             mmxUsername: credentials.username,
@@ -2065,7 +2065,7 @@ async function backfillStoreHistoryFromMmx(storeNumber, options = {}) {
         for (let offset = 1; offset <= daysBack; offset += 1) {
             missingDates.push(addDaysIso(today, -offset));
         }
-        pushLog(`Scraping ${missingDates.length} day(s) from labour scheduler…`);
+        pushLog(`Scraping ${missingDates.length} day(s) from labour scheduler...`);
         const scraped = await scraper.scrapeMissingHistoricalDays(page, missingDates, {
             timeZone: process.env.DASHBOARD_TIME_ZONE || 'Australia/Melbourne',
             onProgress: (ev) => {

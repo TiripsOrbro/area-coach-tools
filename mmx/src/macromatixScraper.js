@@ -1537,7 +1537,7 @@ async function scrapeMissingHistoricalDays(page, dateIsos, options = {}) {
     onProgress?.({
         type: 'day-batch-start',
         count: targets.length,
-        message: `Scraping ${targets.length} day(s) from labour scheduler…`,
+        message: `Scraping ${targets.length} day(s) from labour scheduler...`,
     });
 
     await openDayViewAndReadSales(page, false);
@@ -1549,7 +1549,7 @@ async function scrapeMissingHistoricalDays(page, dateIsos, options = {}) {
         onProgress?.({
             type: 'day-start',
             date: targetIso,
-            message: `Navigating to ${targetIso}…`,
+            message: `Navigating to ${targetIso}...`,
         });
         let guard = 0;
         while (currentIso && currentIso > targetIso && guard < 400) {
