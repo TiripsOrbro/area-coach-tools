@@ -400,7 +400,29 @@ async function waitForStoreDropdownClosed(page, options = {}, timeoutMs = 3000) 
 }
 
 async function pickStoreOptionFromOpenDropdown(page, storeNumber, options = {}) {
-    const storePattern = new RegExp(`\\b${storeNumber}\\s*-`, 'i');
+    const store = String(storeNumber || '').trim();
+    const storePattern = new RegExp(`\\b${store}\\s*-`, 'i');
+
+    // Hierarchical picker: type into "Search by name or code" then click the match.
+    const searched = await page.evaluate(async (code) => {
+        const input = [...document.querySelectorAll('input')].find((el) => {
+            const ph = String(el.getAttribute('placeholder') || '');
+            const r = el.getBoundingClientRect();
+            return /search by name or code/i.test(ph) && r.width > 0 && r.height > 0;
+        });
+        if (!input) return false;
+        input.focus();
+        const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+        if (setter) setter.call(input, code);
+        else input.value = code;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+        return true;
+    }, store);
+    if (searched) {
+        await new Promise((resolve) => setTimeout(resolve, resolvePollMs(options) * 4));
+    }
+
     for (let pass = 0; pass < 30; pass += 1) {
         const clicked = await page.evaluate((regexSource, flags) => {
             const pattern = new RegExp(regexSource, flags);
@@ -1514,8 +1536,11 @@ async function writeForecastDay(page, isoDate, planDay, options = {}) {
 async function writeForecastPlanOnPage(page, storeNumber, plan, accessibleStores, options = {}) {
     const store = String(storeNumber || '').trim();
     const allowed = new Set((accessibleStores || []).map((row) => String(row.storeNumber)));
+    // Initial list can be incomplete (virtualized / wrong area leaf). Always try T22 picker.
     if (allowed.size && !allowed.has(store)) {
-        throw new Error(`Store ${store} is not in this LifeLenz account (accessible: ${[...allowed].join(', ')}).`);
+        console.warn(
+            `[LifeLenz] Store ${store} missing from initial list (${[...allowed].join(', ')}); selecting via T22 search…`
+        );
     }
 
     await runTimedPhase(options, 'select-store', () => selectStoreInLifeLenz(page, store, options), { store });

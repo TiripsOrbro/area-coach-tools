@@ -709,10 +709,14 @@ function commitTimeoutForValue(forecast, options = {}) {
 }
 
 async function dismissForecastOverrideEditor(page) {
-    await page.keyboard.press('Escape').catch(() => {});
+    // Do not press Escape — in Forecasting/Edit it can cancel pending manager overrides
+    // and clear the dirty flag so Save never appears.
     await page.evaluate(() => {
         const inp = document.querySelector('#overrideInput');
-        if (inp) inp.blur();
+        if (inp) {
+            inp.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', bubbles: true }));
+            inp.blur();
+        }
         const header = document.querySelector('#ForecastGridHeader, .mx-grid-header-container');
         header?.click();
     });
@@ -1559,19 +1563,17 @@ async function verifyForecastDay(page, hourly, options = {}) {
 
         const liveRead = await readManagerForecastCell(page, slot.label, slot.hour);
         const cachedRead = getCellCacheValue(cellCache, slot);
-        const readText = liveRead != null && liveRead !== '' ? liveRead : cachedRead;
-        const readMatches = forecastValuesMatch(readText, slot.forecast);
-        const cacheMatches =
-            cachedRead !== undefined && forecastValuesMatch(cachedRead, slot.forecast);
-        if (readMatches || cacheMatches) {
+        // Prefer live DOM. Cache-only matches hid unsaved/reverted values after Escape.
+        const readText =
+            liveRead != null && String(liveRead).trim() !== '' ? liveRead : cachedRead;
+        if (forecastValuesMatch(readText, slot.forecast)) {
             confirmed += 1;
-            const matchedRead = readMatches ? readText : cachedRead;
             emitSlotProgress(onProgress, {
                 type: 'hour-confirmed',
                 hour: slot.hour,
                 label: slot.label,
                 forecast: slot.forecast,
-                read: parseForecastDollar(matchedRead),
+                read: parseForecastDollar(readText),
                 phase: 'day-check',
             });
             continue;
@@ -1595,16 +1597,22 @@ async function waitForForecastSaveButton(page, timeoutMs = 15000) {
     const handle = await page
         .waitForFunction(
             () => {
-                for (const el of document.querySelectorAll('button, a.btn, input[type="button"], input[type="submit"]')) {
+                for (const el of document.querySelectorAll('button, a.btn, input[type="button"], input[type="submit"], [ng-click]')) {
                     const r = el.getBoundingClientRect();
                     if (r.width <= 0 || r.height <= 0) continue;
                     const style = window.getComputedStyle(el);
                     if (style.visibility === 'hidden' || style.display === 'none') continue;
-                    const label = (el.textContent || el.value || el.getAttribute('aria-label') || '')
+                    if (el.disabled || el.getAttribute('disabled') != null) continue;
+                    const label = (el.textContent || el.value || el.getAttribute('aria-label') || el.title || '')
                         .replace(/\s+/g, ' ')
                         .trim();
                     const ngClick = el.getAttribute('ng-click') || '';
-                    if (/^save$/i.test(label) || /^save\b/i.test(label) || /SaveChanges\s*\(/i.test(ngClick)) {
+                    if (
+                        /^save$/i.test(label) ||
+                        /^save\b/i.test(label) ||
+                        /SaveChanges\s*\(/i.test(ngClick) ||
+                        /saveChanges\s*\(/i.test(ngClick)
+                    ) {
                         return {
                             tag: el.tagName,
                             id: el.id || null,
@@ -1623,26 +1631,102 @@ async function waitForForecastSaveButton(page, timeoutMs = 15000) {
     return handle.jsonValue();
 }
 
+async function listVisibleForecastActionButtons(page) {
+    return page.evaluate(() => {
+        const out = [];
+        for (const el of document.querySelectorAll('button, a.btn, input[type="button"], input[type="submit"], a')) {
+            const label = (el.textContent || el.value || el.getAttribute('aria-label') || el.title || '')
+                .replace(/\s+/g, ' ')
+                .trim()
+                .slice(0, 80);
+            const ngClick = el.getAttribute('ng-click') || '';
+            if (!label && !ngClick) continue;
+            const r = el.getBoundingClientRect();
+            const style = window.getComputedStyle(el);
+            out.push({
+                label,
+                ngClick: ngClick.slice(0, 80),
+                disabled: Boolean(el.disabled || el.getAttribute('disabled') != null),
+                visible: r.width > 0 && r.height > 0 && style.visibility !== 'hidden' && style.display !== 'none',
+            });
+        }
+        return out.slice(0, 40);
+    });
+}
+
+async function forceForecastFormDirty(page, hourly) {
+    const slots = normalizeHourlySlots(hourly).filter((slot) => !slot.outsideHours);
+    const slot = slots.find((row) => Math.round(Number(row.forecast) || 0) > 0) || slots[0];
+    if (!slot) return false;
+    // Real Puppeteer clicks mark Angular dirty; bulk DOM writes often do not.
+    const result = await enterAndVerifyForecastSlot(page, slot, null, { suppressFailureProgress: true });
+    await dismissForecastOverrideEditor(page).catch(() => {});
+    return Boolean(result?.ok);
+}
+
+async function clickForecastSaveViaNgClick(page) {
+    return page.evaluate(() => {
+        const nodes = [
+            ...document.querySelectorAll('[ng-click*="SaveChanges"], [ng-click*="saveChanges"], [ng-click*="save("]'),
+        ];
+        for (const el of nodes) {
+            const r = el.getBoundingClientRect();
+            const style = window.getComputedStyle(el);
+            if (r.width <= 0 || r.height <= 0) continue;
+            if (style.visibility === 'hidden' || style.display === 'none') continue;
+            if (el.disabled || el.getAttribute('disabled') != null) continue;
+            el.click();
+            return el.getAttribute('ng-click') || 'SaveChanges';
+        }
+        return null;
+    });
+}
+
 async function commitForecastDaySave(page, options = {}) {
     const fast = options.fast !== false;
-    const savedAs = await clickForecastSave(page, {
+    const hourly = options.hourly || [];
+
+    let savedAs = await clickForecastSave(page, {
         timeoutMs: fast ? SAVE_APPEAR_FAST_MS : SAVE_APPEAR_MS,
         saveSuccessTimeoutMs: SAVE_SUCCESS_TIMEOUT_MS,
     });
-    if (!savedAs) {
-        // One slower retry — Save often appears only after the override editor closes.
-        const retry = await clickForecastSave(page, {
-            timeoutMs: SAVE_APPEAR_MS,
-            saveSuccessTimeoutMs: SAVE_SUCCESS_TIMEOUT_MS,
-        });
-        if (!retry) {
-            throw new Error(
-                'Macromatix Save button did not appear after forecast edits. Values were entered but not saved.'
-            );
-        }
-        return retry;
+    if (savedAs) return savedAs;
+
+    savedAs = await clickForecastSaveViaNgClick(page);
+    if (savedAs) {
+        await waitForForecastSaveCompleted(page, SAVE_SUCCESS_TIMEOUT_MS);
+        await waitForForecastGrid(page);
+        return savedAs;
     }
-    return savedAs;
+
+    // Bulk fill can update cell text without Angular dirty → Save stays hidden.
+    if (hourly.length) {
+        await forceForecastFormDirty(page, hourly);
+    }
+
+    savedAs = await clickForecastSave(page, {
+        timeoutMs: SAVE_APPEAR_MS,
+        saveSuccessTimeoutMs: SAVE_SUCCESS_TIMEOUT_MS,
+    });
+    if (savedAs) return savedAs;
+
+    savedAs = await clickForecastSaveViaNgClick(page);
+    if (savedAs) {
+        await waitForForecastSaveCompleted(page, SAVE_SUCCESS_TIMEOUT_MS);
+        await waitForForecastGrid(page);
+        return savedAs;
+    }
+
+    const buttons = await listVisibleForecastActionButtons(page).catch(() => []);
+    const sample = buttons
+        .filter((b) => b.visible || /save/i.test(b.label) || /save/i.test(b.ngClick))
+        .slice(0, 12)
+        .map((b) => `${b.visible ? '' : '[hidden]'}${b.label || b.ngClick}${b.disabled ? '(disabled)' : ''}`)
+        .join(' | ');
+    throw new Error(
+        'Macromatix Save button did not appear after forecast edits. Values were entered but not saved.' +
+            (sample ? ` Visible actions: ${sample}` : '')
+    );
 }
 
 async function clickForecastSave(page, { timeoutMs = SAVE_APPEAR_MS, saveSuccessTimeoutMs = SAVE_SUCCESS_TIMEOUT_MS } = {}) {
@@ -1654,7 +1738,7 @@ async function clickForecastSave(page, { timeoutMs = SAVE_APPEAR_MS, saveSuccess
         for (const el of document.querySelectorAll('button, a.btn, input[type="button"], input[type="submit"]')) {
             const r = el.getBoundingClientRect();
             if (r.width <= 0 || r.height <= 0) continue;
-            const label = (el.textContent || el.value || el.getAttribute('aria-label') || '')
+            const label = (el.textContent || el.value || el.getAttribute('aria-label') || el.title || '')
                 .replace(/\s+/g, ' ')
                 .trim();
             const ngClick = el.getAttribute('ng-click') || '';
@@ -1926,7 +2010,7 @@ async function writeForecastPlanToSpa(page, storeNumber, plan, options = {}) {
         emit({ type: 'day-saving', date: day.date, fill: fillResult, verify: verifyResult });
 
         const savedAs = fillResult.changed
-            ? await commitForecastDaySave(page, { fast: true })
+            ? await commitForecastDaySave(page, { fast: true, hourly: verifySlots })
             : 'unchanged';
 
         const dayResult = {
