@@ -502,6 +502,57 @@ function Install-NpmDeps {
     }
 }
 
+function Test-PuppeteerChromeInstalled {
+    $cacheRoot = if ($env:PUPPETEER_CACHE_DIR -and $env:PUPPETEER_CACHE_DIR -notmatch 'cursor-sandbox') {
+        $env:PUPPETEER_CACHE_DIR
+    } else {
+        Join-Path $env:USERPROFILE '.cache\puppeteer'
+    }
+    if (-not (Test-Path -LiteralPath $cacheRoot)) { return $false }
+    $chrome = Get-ChildItem -LiteralPath $cacheRoot -Recurse -Filter 'chrome.exe' -ErrorAction SilentlyContinue |
+        Select-Object -First 1
+    return [bool]$chrome
+}
+
+function Ensure-PuppeteerChrome {
+    param([string]$Dir)
+
+    if (Test-PuppeteerChromeInstalled) {
+        Write-Host 'Puppeteer Chrome already installed.'
+        return
+    }
+
+    Write-Step 'Installing Puppeteer Chrome'
+    Push-Location $Dir
+    $prevCache = $env:PUPPETEER_CACHE_DIR
+    try {
+        # Avoid Cursor/sandbox cache redirects so the app finds Chrome at the default path.
+        if ($env:PUPPETEER_CACHE_DIR -and $env:PUPPETEER_CACHE_DIR -match 'cursor-sandbox') {
+            Remove-Item Env:\PUPPETEER_CACHE_DIR -ErrorAction SilentlyContinue
+        }
+        $env:PUPPETEER_CACHE_DIR = Join-Path $env:USERPROFILE '.cache\puppeteer'
+        New-Item -ItemType Directory -Force -Path $env:PUPPETEER_CACHE_DIR | Out-Null
+
+        $prev = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        npx --yes puppeteer browsers install chrome | Out-Host
+        $code = $LASTEXITCODE
+        $ErrorActionPreference = $prev
+        if ($code -ne 0 -or -not (Test-PuppeteerChromeInstalled)) {
+            throw "Puppeteer Chrome install failed (exit $code). Run: npx puppeteer browsers install chrome"
+        }
+        Write-Host "Installed to $env:PUPPETEER_CACHE_DIR"
+    }
+    finally {
+        if ($null -eq $prevCache) {
+            Remove-Item Env:\PUPPETEER_CACHE_DIR -ErrorAction SilentlyContinue
+        } else {
+            $env:PUPPETEER_CACHE_DIR = $prevCache
+        }
+        Pop-Location
+    }
+}
+
 function Test-NeedsNpmInstall {
     param([string]$Dir)
 
@@ -711,6 +762,8 @@ if ($needNpm) {
 else {
     Write-Host 'Dependencies already present - skipping npm install.'
 }
+
+Ensure-PuppeteerChrome -Dir $InstallDir
 
 Write-Step 'Creating launchers and shortcuts'
 $cmdLauncher = Write-LauncherScripts -Dir $InstallDir
