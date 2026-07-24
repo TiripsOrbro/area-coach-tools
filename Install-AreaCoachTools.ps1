@@ -360,7 +360,8 @@ function Update-FromGit {
             }
             else {
                 Write-Host "Updating $($local.Substring(0, 7)) -> $($remote.Substring(0, 7)) ($branch)"
-                Invoke-Git -Quiet -FailMessage 'git checkout failed' -Arguments @('checkout', '-B', $branch, $remoteRef)
+                # -f discards local edits so a dirty tree cannot block the Steam-style update.
+                Invoke-Git -Quiet -FailMessage 'git checkout failed' -Arguments @('checkout', '-f', '-B', $branch, $remoteRef)
                 Invoke-Git -Quiet -FailMessage 'git reset --hard failed' -Arguments @('reset', '--hard', $remoteRef)
                 Invoke-GitCleanPreservingLocal
                 $short = (git rev-parse --short HEAD).Trim()

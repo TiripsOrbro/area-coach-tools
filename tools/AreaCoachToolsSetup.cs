@@ -156,7 +156,7 @@ internal sealed class SetupForm : Form
         Controls.Add(_closeBtn);
 
         AppendLog("Ready.");
-        AppendLog("Git and Node.js 18+ must already be installed on this PC.");
+        AppendLog("Missing Git/Node will be installed automatically when possible.");
         if (_autoStart)
         {
             AppendLog(Program.AppLooksInstalled(_installDir)
@@ -318,7 +318,9 @@ internal sealed class SetupForm : Form
                     {
                         MessageBox.Show(
                             this,
-                            "Install failed. Check the log.\n\nNeed Git and Node.js 18+ installed, then try again.",
+                            "Install/update failed. Check the log in this window for the real error.\n\n"
+                                + "Common causes: no internet, GitHub blocked, or npm install failed.\n"
+                                + "Git and Node.js 18+ are required (the installer tries to install them).",
                             Text,
                             MessageBoxButtons.OK,
                             MessageBoxIcon.Error
