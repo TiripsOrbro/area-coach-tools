@@ -448,18 +448,34 @@ async function selectStoreInLifeLenz(page, storeNumber, options = {}) {
             }
 
             await safeClickHandle(page, trigger);
-            if (!(await waitForDropdownOptions(page, options))) {
-                // Area-first pickers may open with T01/T22 tree and no store rows yet.
-                await selectLifeLenzArea(page, resolveLifeLenzArea(options.lifelenzArea), {
-                    required: false,
-                }).catch(() => false);
-                if (!(await waitForDropdownOptions(page, options))) {
-                    throw new Error(`Store dropdown did not open for store ${store}.`);
+            const pickerOpen = await waitForDropdownOptions(page, options);
+            if (!pickerOpen) {
+                throw new Error(`Store dropdown did not open for store ${store}.`);
+            }
+
+            // Location tree accounts: always force Area T22 (or LIFELENZ_AREA) before the store row.
+            const area = resolveLifeLenzArea(options.lifelenzArea);
+            const areaCodes = await page.evaluate(() => {
+                const codes = [];
+                const seen = new Set();
+                for (const el of document.querySelectorAll(
+                    'button, a, li, div, span, p, [role="treeitem"], [role="option"], [role="menuitem"]'
+                )) {
+                    const r = el.getBoundingClientRect();
+                    if (r.width <= 0 || r.height <= 0 || r.width > 280) continue;
+                    const text = (el.textContent || '').replace(/\s+/g, ' ').trim().toUpperCase();
+                    if (!/^T\d{2}$/.test(text) || seen.has(text)) continue;
+                    seen.add(text);
+                    codes.push(text);
                 }
-            } else {
-                await selectLifeLenzArea(page, resolveLifeLenzArea(options.lifelenzArea), {
-                    required: false,
-                }).catch(() => false);
+                return codes;
+            });
+            if (areaCodes.length || area) {
+                await selectLifeLenzArea(page, area, {
+                    required: areaCodes.length > 0,
+                    force: true,
+                    timeoutMs: 12000,
+                });
             }
 
             if (!(await pickStoreOptionFromOpenDropdown(page, store, options))) {

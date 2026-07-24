@@ -316,11 +316,20 @@ async function readStoreLabelsFromBodyText(page) {
 async function readVisibleStoreOptionLabels(page) {
     return page.evaluate(() => {
         const found = [];
-        for (const el of document.querySelectorAll('[role="option"], [role="menuitem"]')) {
+        const seen = new Set();
+        const push = (raw) => {
+            const text = String(raw || '').replace(/\s+/g, ' ').trim();
+            if (!/^\d{4}\s*-\s*\S/.test(text) || text.length >= 120) return;
+            if (seen.has(text)) return;
+            seen.add(text);
+            found.push(text);
+        };
+        for (const el of document.querySelectorAll(
+            '[role="option"], [role="menuitem"], button, a, li, div, span'
+        )) {
             const rect = el.getBoundingClientRect();
             if (rect.width <= 0 || rect.height <= 0) continue;
-            const text = (el.textContent || '').replace(/\s+/g, ' ').trim();
-            if (/^\d{4}\s*-\s*\S/.test(text)) found.push(text);
+            push(el.textContent);
         }
         return found;
     });
@@ -365,83 +374,130 @@ async function countVisibleStoreLabels(page) {
     });
 }
 
+async function listVisibleAreaCodes(page) {
+    return page.evaluate(() => {
+        const codes = [];
+        const seen = new Set();
+        for (const el of document.querySelectorAll(
+            'button, a, li, div, span, p, [role="treeitem"], [role="option"], [role="menuitem"]'
+        )) {
+            const r = el.getBoundingClientRect();
+            if (r.width <= 0 || r.height <= 0 || r.width > 280) continue;
+            const text = (el.textContent || '').replace(/\s+/g, ' ').trim();
+            if (!/^T\d{2}$/i.test(text)) continue;
+            const key = text.toUpperCase();
+            if (seen.has(key)) continue;
+            seen.add(key);
+            codes.push(key);
+        }
+        return codes;
+    });
+}
+
+async function isLifeLenzAreaSelected(page, areaCode) {
+    const area = String(areaCode || '').trim().toUpperCase();
+    if (!area) return false;
+    return page.evaluate((code) => {
+        const selected = document.querySelectorAll(
+            '[aria-selected="true"], [aria-current="true"], [aria-current="page"]'
+        );
+        for (const el of selected) {
+            const text = (el.textContent || '').replace(/\s+/g, ' ').trim().toUpperCase();
+            if (text === code) return true;
+        }
+        // Highlighted left-rail row (common LifeLenz styles).
+        for (const el of document.querySelectorAll('button, a, li, div, span, [role="treeitem"]')) {
+            const text = (el.textContent || '').replace(/\s+/g, ' ').trim().toUpperCase();
+            if (text !== code) continue;
+            const r = el.getBoundingClientRect();
+            if (r.width <= 0 || r.height <= 0 || r.left > window.innerWidth * 0.5) continue;
+            const style = window.getComputedStyle(el);
+            const bg = style.backgroundColor || '';
+            const selectedLook =
+                el.getAttribute('aria-selected') === 'true' ||
+                /selected|active|bg-muted|bg-accent|bg-gray|bg-slate/i.test(el.className || '') ||
+                (bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent');
+            if (selectedLook) return true;
+        }
+        return false;
+    }, area);
+}
+
 /**
  * Some LifeLenz accounts show a location tree (Taco Bell - COL → T01/T02/T21/T22/…)
- * before store rows. Select the coach area so stores become visible.
+ * before store rows. Always click the coach area when that tree is visible.
  */
 async function selectLifeLenzArea(page, areaCode, options = {}) {
     const area = resolveLifeLenzArea(areaCode);
     if (!area) return false;
 
-    const storeCount = await countVisibleStoreLabels(page);
-    if (storeCount >= 1) {
-        const areaAlreadyActive = await page.evaluate((code) => {
-            const nodes = document.querySelectorAll(
-                '[aria-selected="true"], [aria-current="true"], .active, [class*="selected"], [class*="bg-"]'
-            );
-            for (const el of nodes) {
-                const text = (el.textContent || '').replace(/\s+/g, ' ').trim();
-                if (text === code || new RegExp(`^${code}\\b`, 'i').test(text)) return true;
-            }
-            return false;
-        }, area);
-        if (areaAlreadyActive || storeCount >= 2) return true;
-    }
-
-    const clicked = await page.evaluate((code) => {
-        const escaped = String(code).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const exact = new RegExp(`^\\s*${escaped}\\s*$`, 'i');
-        const candidates = [
-            ...document.querySelectorAll('[role="treeitem"]'),
-            ...document.querySelectorAll('[role="option"]'),
-            ...document.querySelectorAll('[role="menuitem"]'),
-            ...document.querySelectorAll('button, a, li, div, span'),
-        ];
-
-        const scoreClickable = (el) => {
-            const r = el.getBoundingClientRect();
-            if (r.width <= 0 || r.height <= 0 || r.width > 420) return -1;
-            const text = (el.textContent || '').replace(/\s+/g, ' ').trim();
-            const ownText = [...el.childNodes]
-                .filter((n) => n.nodeType === Node.TEXT_NODE)
-                .map((n) => n.textContent || '')
-                .join('')
-                .replace(/\s+/g, ' ')
-                .trim();
-            const label = ownText || text;
-            if (!(exact.test(label) || label === code)) return -1;
-            // Prefer left-rail tree items (area list) over the right-pane header.
-            let score = 100;
-            if (r.left < window.innerWidth * 0.45) score += 40;
-            if (label.length <= 6) score += 20;
-            if (el.getAttribute('role') === 'treeitem') score += 30;
-            score -= Math.abs(r.width - 80) / 20;
-            return score;
-        };
-
-        let best = null;
-        let bestScore = -1;
-        for (const el of candidates) {
-            const score = scoreClickable(el);
-            if (score > bestScore) {
-                best = el;
-                bestScore = score;
-            }
-        }
-        if (!best) return false;
-        best.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-        best.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }));
-        best.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window }));
-        best.click();
-        return true;
-    }, area);
-
-    if (!clicked) {
+    const areaCodes = await listVisibleAreaCodes(page);
+    const treeVisible = areaCodes.length >= 2 || areaCodes.includes(area.toUpperCase());
+    if (!treeVisible) {
         if (options.required) {
-            throw new Error(`Could not select LifeLenz area ${area} in the location picker.`);
+            throw new Error(
+                `LifeLenz area picker did not show area codes (wanted ${area}). Open the location/store picker first.`
+            );
         }
         return false;
     }
+
+    if (!options.force && (await isLifeLenzAreaSelected(page, area))) {
+        console.log(`[LifeLenz] Area ${area} already selected`);
+        return true;
+    }
+
+    console.log(`[LifeLenz] Selecting area ${area} (visible: ${areaCodes.join(', ')})`);
+
+    const handle = await page.evaluateHandle((code) => {
+        const wanted = String(code || '').trim().toUpperCase();
+        const matches = [];
+        for (const el of document.querySelectorAll(
+            'button, a, li, div, span, p, [role="treeitem"], [role="option"], [role="menuitem"]'
+        )) {
+            const r = el.getBoundingClientRect();
+            if (r.width <= 0 || r.height <= 0 || r.width > 280 || r.height > 80) continue;
+            const text = (el.textContent || '').replace(/\s+/g, ' ').trim().toUpperCase();
+            if (text !== wanted) continue;
+            matches.push({
+                el,
+                left: r.left,
+                top: r.top,
+                score:
+                    (r.left < window.innerWidth * 0.45 ? 100 : 0) +
+                    (el.getAttribute('role') === 'treeitem' ? 40 : 0) +
+                    (el.tagName === 'BUTTON' || el.tagName === 'A' ? 20 : 0) -
+                    Math.floor(r.left / 20),
+            });
+        }
+        if (!matches.length) return null;
+        matches.sort((a, b) => b.score - a.score || a.top - b.top);
+        return matches[0].el;
+    }, area);
+
+    const el = handle.asElement ? handle.asElement() : null;
+    if (!el) {
+        if (options.required) {
+            throw new Error(`Could not find LifeLenz area ${area} to click.`);
+        }
+        return false;
+    }
+
+    await el.evaluate((node) => node.scrollIntoView({ block: 'nearest', inline: 'nearest' }));
+    try {
+        await el.click({ delay: 25 });
+    } catch {
+        await el.evaluate((node) => {
+            node.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }));
+            node.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window }));
+            node.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+        });
+    }
+
+    const selected = await pollAuthUntil(
+        async () => ((await isLifeLenzAreaSelected(page, area)) ? true : null),
+        { timeoutMs: 4000, pollMs: 150, label: `area ${area} selected` }
+    );
 
     const stores = await pollAuthUntil(
         async () => {
@@ -450,10 +506,11 @@ async function selectLifeLenzArea(page, areaCode, options = {}) {
         },
         { timeoutMs: options.timeoutMs || 10000, pollMs: 150, label: `area ${area} stores` }
     );
-    if (!stores && options.required) {
-        throw new Error(`Selected LifeLenz area ${area} but no stores appeared.`);
+
+    if (!selected && !stores && options.required) {
+        throw new Error(`Clicked LifeLenz area ${area} but it did not become active / show stores.`);
     }
-    return Boolean(stores);
+    return Boolean(selected || stores);
 }
 
 async function collectStoreLabelsFromOpenDropdown(page) {
@@ -545,7 +602,15 @@ async function openStoreDropdown(page) {
         if (!el) continue;
         await el.click().catch(() => null);
         // New accounts: Area (e.g. T22) must be selected before store rows show.
-        await selectLifeLenzArea(page, resolveLifeLenzArea(), { required: false }).catch(() => false);
+        const areaCodes = await listVisibleAreaCodes(page).catch(() => []);
+        if (areaCodes.length) {
+            await selectLifeLenzArea(page, resolveLifeLenzArea(), {
+                required: true,
+                force: true,
+            });
+        } else {
+            await selectLifeLenzArea(page, resolveLifeLenzArea(), { required: false }).catch(() => false);
+        }
         await waitForVisibleStoreDropdownOptions(page, 5000);
         const labels = await collectStoreLabelsFromOpenDropdown(page);
         // Stop at the first trigger that opens a real store list — do not

@@ -1976,7 +1976,11 @@ async function configureAndGenerateReport(page, report, reportNav, hooks = {}) {
     await emit(`selecting ${report.reportName}…`);
     await selectReportInList(page, report.reportName);
 
-    const startDate = resolveReportDate(report.startDate || 'lastWeekMonday', dateOpts(report));
+    const defaultStart =
+        report.id === 'report1' || /on\s*hand/i.test(String(report.label || report.reportName || ''))
+            ? 'tomorrow'
+            : 'lastWeekMonday';
+    const startDate = resolveReportDate(report.startDate || defaultStart, dateOpts(report));
     const formatText = report.format || 'Excel Data Only';
     const hasEndDate = Boolean(report.endDate);
 

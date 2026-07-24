@@ -614,7 +614,11 @@ async function configureAndGenerateReport(page, report, reportNav) {
     await setReportFormat(page, report.format || 'Excel Data Only');
     await page.waitForTimeout(1000);
 
-    const startDate = resolveReportDate(report.startDate || 'lastWeekMonday', dateOpts(report));
+    const defaultStart =
+        report.id === 'report1' || /on\s*hand/i.test(String(report.label || report.reportName || ''))
+            ? 'tomorrow'
+            : 'lastWeekMonday';
+    const startDate = resolveReportDate(report.startDate || defaultStart, dateOpts(report));
     await setStartDate(page, startDate);
 
     if (report.endDate) {

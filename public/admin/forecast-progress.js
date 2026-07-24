@@ -184,6 +184,7 @@
             slot = (day.hourly || []).find((h) => formatHourLabel(h.hour) === payload.label);
         }
         if (!slot) return;
+        if (payload.forecast != null && slot.forecast == null) slot.forecast = payload.forecast;
         if (payload.type === 'hour-entering') {
             slot.status = 'entering';
             slot.error = null;
@@ -193,6 +194,7 @@
         } else if (payload.type === 'hour-confirmed') {
             slot.status = 'confirmed';
             slot.readValue = payload.read ?? slot.readValue;
+            slot.skipped = Boolean(payload.skipped);
             slot.error = null;
         } else if (payload.type === 'hour-failed') {
             slot.status = 'failed';
@@ -377,7 +379,11 @@
             if (day) day.status = 'saving';
         } else if (payload.type === 'day-done' || payload.type === 'day-skipped') {
             const day = findDay(store.days, payload.date);
-            if (day) day.status = 'done';
+            if (day) {
+                day.status = 'done';
+                day.savedAs = payload.savedAs || (payload.type === 'day-skipped' ? 'skipped' : day.savedAs);
+                if (payload.forecastTotal != null) day.forecastTotal = payload.forecastTotal;
+            }
             if (state.activeDate === payload.date) state.activeDate = null;
         } else if (payload.type === 'store-done' || payload.type === 'store-complete') {
             store.mmxStatus = payload.ok === false ? 'error' : 'done';
@@ -394,7 +400,16 @@
         if (!day) return '—';
         if (day.status === 'done') {
             const n = (day.hourly || []).filter((h) => h.status === 'confirmed').length;
-            return n ? `${n}h · ${formatMoney(day.forecastTotal)}` : formatMoney(day.forecastTotal);
+            const saveLabel =
+                day.savedAs === 'unchanged'
+                    ? 'Matched'
+                    : day.savedAs === 'Save' || day.savedAs === 'saved'
+                      ? 'Saved'
+                      : day.savedAs === 'skipped'
+                        ? 'Skipped'
+                        : 'Done';
+            const money = formatMoney(day.forecastTotal);
+            return n ? `${saveLabel} · ${n}h · ${money}` : `${saveLabel} · ${money}`;
         }
         if (day.status === 'error') return day.error || 'Failed';
         if (day.status === 'filling' || day.status === 'verifying' || day.status === 'saving') {
@@ -461,6 +476,14 @@
         const idx = (days || []).findIndex((d) => d.date === day?.date);
         const showPrev = idx > 0;
         const showNext = idx >= 0 && idx < (days || []).length - 1;
+        const saveNote =
+            channel === 'mmx' && day?.savedAs
+                ? day.savedAs === 'unchanged'
+                    ? ' · Already matched in MMX'
+                    : day.savedAs === 'Save' || day.savedAs === 'saved'
+                      ? ' · Saved to MMX'
+                      : ''
+                : '';
         return `
             <div class="fc-progress-detail-nav">
                 <button type="button" class="fc-progress-day-nav" data-progress-day-nav data-channel="${channel}" data-dir="-1"${showPrev ? '' : ' hidden'}>‹</button>
@@ -470,7 +493,7 @@
                 </div>
                 <button type="button" class="fc-progress-day-nav" data-progress-day-nav data-channel="${channel}" data-dir="1"${showNext ? '' : ' hidden'}>›</button>
             </div>
-            <span class="fc-progress-detail-total">${formatMoney(day.forecastTotal)}</span>`;
+            <span class="fc-progress-detail-total">${formatMoney(day.forecastTotal)}${escapeHtml(saveNote)}</span>`;
     }
 
     function buildMmxDetail(day, days) {
@@ -478,9 +501,16 @@
         const rows = (day.hourly || [])
             .map((slot) => {
                 const status = slot.status || 'pending';
+                const entered =
+                    slot.readValue != null && Number.isFinite(Number(slot.readValue))
+                        ? formatMoney(slot.readValue)
+                        : status === 'pending'
+                          ? '—'
+                          : '…';
                 return `<tr class="fc-progress-hour-row--${status}" data-hour="${escapeHtml(String(slot.hour))}">
                     <th scope="row">${escapeHtml(formatHourLabel(slot.hour))}</th>
-                    <td>${formatMoney(slot.forecast)}</td>
+                    <td class="fc-progress-planned">${formatMoney(slot.forecast)}</td>
+                    <td class="fc-progress-entered">${entered}</td>
                     <td class="fc-progress-hour-status">${escapeHtml(hourStatusLabel(status))}</td>
                 </tr>`;
             })
@@ -489,8 +519,8 @@
             <div class="fc-progress-detail-head">${buildDayNav(day, days, 'mmx')}</div>
             <p class="fc-progress-live">${escapeHtml(activeHourMessage(day))}</p>
             <table class="fc-progress-hour-table">
-                <thead><tr><th>Hour</th><th>Forecast</th><th>Status</th></tr></thead>
-                <tbody>${rows || '<tr><td colspan="3">No hourly values</td></tr>'}</tbody>
+                <thead><tr><th>Hour</th><th>Planned</th><th>Entered</th><th>Status</th></tr></thead>
+                <tbody>${rows || '<tr><td colspan="4">No hourly values</td></tr>'}</tbody>
             </table>`;
     }
 
@@ -499,9 +529,16 @@
         const rows = (day.dayParts || [])
             .map((part) => {
                 const status = part.status || 'pending';
+                const entered =
+                    part.readValue != null && Number.isFinite(Number(part.readValue))
+                        ? formatMoney(part.readValue)
+                        : status === 'pending'
+                          ? '—'
+                          : '…';
                 return `<tr class="fc-progress-hour-row--${status}" data-daypart-key="${escapeHtml(part.key)}">
                     <th scope="row">${escapeHtml(part.label)}</th>
-                    <td>${formatMoney(part.adjusted)}</td>
+                    <td class="fc-progress-planned">${formatMoney(part.adjusted)}</td>
+                    <td class="fc-progress-entered">${entered}</td>
                     <td class="fc-progress-hour-status">${escapeHtml(hourStatusLabel(status))}</td>
                 </tr>`;
             })
@@ -510,8 +547,8 @@
             <div class="fc-progress-detail-head">${buildDayNav(day, days, 'lifelenz')}</div>
             <p class="fc-progress-live">${escapeHtml(activeDayPartMessage(day, liveLabel))}</p>
             <table class="fc-progress-hour-table">
-                <thead><tr><th>Day part</th><th>Forecast</th><th>Status</th></tr></thead>
-                <tbody>${rows || '<tr><td colspan="3">No day parts</td></tr>'}</tbody>
+                <thead><tr><th>Day part</th><th>Planned</th><th>Entered</th><th>Status</th></tr></thead>
+                <tbody>${rows || '<tr><td colspan="4">No day parts</td></tr>'}</tbody>
             </table>`;
     }
 
@@ -521,8 +558,9 @@
             detailEl.innerHTML = '<p class="fc-progress-meta">Waiting for the next day…</p>';
             return;
         }
-        if (detailEl.dataset.activeDate !== day.date) {
+        if (detailEl.dataset.activeDate !== day.date || detailEl.dataset.savedAs !== String(day.savedAs || '')) {
             detailEl.dataset.activeDate = day.date;
+            detailEl.dataset.savedAs = String(day.savedAs || '');
             detailEl.innerHTML = buildMmxDetail(day, days);
             return;
         }
@@ -535,6 +573,15 @@
             row.className = `fc-progress-hour-row--${status}`;
             const statusEl = row.querySelector('.fc-progress-hour-status');
             if (statusEl) statusEl.textContent = hourStatusLabel(status);
+            const enteredEl = row.querySelector('.fc-progress-entered');
+            if (enteredEl) {
+                enteredEl.textContent =
+                    slot.readValue != null && Number.isFinite(Number(slot.readValue))
+                        ? formatMoney(slot.readValue)
+                        : status === 'pending'
+                          ? '—'
+                          : '…';
+            }
         }
     }
 
@@ -558,6 +605,15 @@
             row.className = `fc-progress-hour-row--${status}`;
             const statusEl = row.querySelector('.fc-progress-hour-status');
             if (statusEl) statusEl.textContent = hourStatusLabel(status);
+            const enteredEl = row.querySelector('.fc-progress-entered');
+            if (enteredEl) {
+                enteredEl.textContent =
+                    part.readValue != null && Number.isFinite(Number(part.readValue))
+                        ? formatMoney(part.readValue)
+                        : status === 'pending'
+                          ? '—'
+                          : '…';
+            }
         }
     }
 

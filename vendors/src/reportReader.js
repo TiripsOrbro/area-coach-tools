@@ -115,16 +115,35 @@ function detectIseGridLayout(grid) {
 function parseIseDayLabelsFromGrid(grid, layout = null) {
     const cols = layout || detectIseGridLayout(grid);
     const fallback = (i) => `Day${i + 1}`;
+    const cleanLabel = (value, i) =>
+        String(value ?? '')
+            .replace(/\s+/g, ' ')
+            .trim() || fallback(i);
+
+    // MMX puts "Friday\n17-Jul-26" … immediately before ItemCode on data rows,
+    // while Day1…Day7 headers (and usage values) sit at dayStart.
+    const preCodeStart = cols.codeCol - cols.dayCount;
+    if (preCodeStart >= 0) {
+        for (let r = 0; r < Math.min(20, grid?.length || 0); r++) {
+            const row = grid[r];
+            if (!row || row.length < cols.codeCol) continue;
+            const slice = row.slice(preCodeStart, preCodeStart + cols.dayCount);
+            if (
+                slice.length === cols.dayCount &&
+                slice.every((cell) => iseDateCellLooksLikeDayLabel(cell))
+            ) {
+                return slice.map((cell, i) => cleanLabel(cell, i));
+            }
+        }
+    }
+
     for (let r = 0; r < Math.min(10, grid?.length || 0); r++) {
         const row = grid[r];
         if (!row || row.length < cols.dayStart + cols.dayCount) continue;
         if (iseDateCellLooksLikeDayLabel(row[cols.dayStart])) {
             const labels = [];
             for (let c = cols.dayStart; c < cols.dayStart + cols.dayCount; c++) {
-                const raw = String(row[c] ?? '')
-                    .replace(/\s+/g, ' ')
-                    .trim();
-                labels.push(raw || fallback(c - cols.dayStart));
+                labels.push(cleanLabel(row[c], c - cols.dayStart));
             }
             return labels;
         }
@@ -132,19 +151,16 @@ function parseIseDayLabelsFromGrid(grid, layout = null) {
         if (headerCell.includes('item') && headerCell.includes('code')) {
             const labels = [];
             for (let c = cols.dayStart; c < cols.dayStart + cols.dayCount; c++) {
-                const raw = String(row[c] ?? '')
-                    .replace(/\s+/g, ' ')
-                    .trim();
-                labels.push(raw || fallback(c - cols.dayStart));
+                labels.push(cleanLabel(row[c], c - cols.dayStart));
             }
-            if (labels.some((l) => l && !/^day\d$/i.test(l))) return labels;
+            if (labels.some((l) => l && !/^day\s*\d+$/i.test(l))) return labels;
         }
     }
     const row0 = grid?.[0];
     if (row0 && /^day\s*1$/i.test(String(row0[cols.dayStart] || ''))) {
         return row0
             .slice(cols.dayStart, cols.dayStart + cols.dayCount)
-            .map((h, i) => String(h || fallback(i)).trim());
+            .map((h, i) => cleanLabel(h, i));
     }
     return Array.from({ length: cols.dayCount }, (_, i) => fallback(i));
 }

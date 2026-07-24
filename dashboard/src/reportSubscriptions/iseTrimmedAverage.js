@@ -1,6 +1,7 @@
 const { getStoreConfig } = require('../../../stores/src/storeList');
 const { listWeeklySnapshots, resolveIseWeeksDateRange, addDaysToIso } = require('./iseHistoryLedger');
 const { weekdayForIso } = require('../forecast/forecastHistoryLedger');
+const { isIseAverageItem, sortIseAverageItems } = require('./iseAverageItems');
 
 function isoToDdMmYy(iso) {
     const [y, m, d] = String(iso || '').split('-').map(Number);
@@ -31,6 +32,21 @@ const DAY_LABEL_TO_INDEX = {
     saturday: 6,
 };
 
+const MONTH_TO_NUM = {
+    jan: 1,
+    feb: 2,
+    mar: 3,
+    apr: 4,
+    may: 5,
+    jun: 6,
+    jul: 7,
+    aug: 8,
+    sep: 9,
+    oct: 10,
+    nov: 11,
+    dec: 12,
+};
+
 function csvEscape(value) {
     const s = value == null ? '' : String(value);
     if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
@@ -38,35 +54,80 @@ function csvEscape(value) {
 }
 
 function dayLabelToWeekdayIndex(label) {
-    const key = String(label || '')
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-z]/g, '');
+    const raw = String(label || '').trim();
+    if (!raw) return null;
+    const named = raw.match(
+        /\b(sun(?:day)?|mon(?:day)?|tue(?:s(?:day)?)?|wed(?:nesday)?|thu(?:r(?:s(?:day)?)?)?|fri(?:day)?|sat(?:urday)?)\b/i
+    );
+    if (named) {
+        const key = named[1].toLowerCase().replace(/[^a-z]/g, '');
+        if (DAY_LABEL_TO_INDEX[key] != null) return DAY_LABEL_TO_INDEX[key];
+    }
+    const key = raw.toLowerCase().replace(/[^a-z]/g, '');
     return DAY_LABEL_TO_INDEX[key] ?? null;
 }
 
-/** MMX ISE weeks use Day1 = snapshot start date; map a weekday column to dayValues index. */
+/** Parse MMX ISE label like "Monday 20-Jul-26" / "20-Jul-2026" / ISO into YYYY-MM-DD. */
+function parseIseLabelDate(label) {
+    const raw = String(label || '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    if (!raw) return '';
+    const iso = raw.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+    const au = raw.match(/(\d{1,2})-([A-Za-z]{3})-(\d{2,4})/);
+    if (au) {
+        const day = Number(au[1]);
+        const month = MONTH_TO_NUM[au[2].toLowerCase()];
+        let year = Number(au[3]);
+        if (!month || !day || !year) return '';
+        if (year < 100) year += 2000;
+        return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    }
+    return '';
+}
+
+function snapshotDayLabels(snap, labels = null) {
+    if (Array.isArray(labels) && labels.length) return labels;
+    return snap?.dayLabels || [];
+}
+
+/**
+ * MMX ISE weeks: Day1…Day7 are the 7 days ENDING on the report/snapshot date
+ * (Day7 = snap.date). Older snapshots only store Day1…Day7 text — map from that.
+ */
 function resolveDayIndexForWeekday(snap, weekdayIndex, labels = null) {
     if (!snap || weekdayIndex == null) return -1;
-    const dayLabels = Array.isArray(labels) && labels.length ? labels : snap.dayLabels || [];
+    const dayLabels = snapshotDayLabels(snap, labels);
 
     for (let i = 0; i < dayLabels.length; i += 1) {
         if (dayLabelToWeekdayIndex(dayLabels[i]) === weekdayIndex) return i;
+    }
+
+    for (let i = 0; i < dayLabels.length; i += 1) {
+        const iso = parseIseLabelDate(dayLabels[i]);
+        if (iso && weekdayForIso(iso) === weekdayIndex) return i;
     }
 
     const anchor = String(snap.date || '').trim();
     if (!anchor) return -1;
     const count = Math.max(dayLabels.length, 7);
     for (let i = 0; i < count; i += 1) {
-        if (weekdayForIso(addDaysToIso(anchor, i)) === weekdayIndex) return i;
+        // Day1 = end-6 … Day7 = end
+        if (weekdayForIso(addDaysToIso(anchor, i - (count - 1))) === weekdayIndex) return i;
     }
     return -1;
 }
 
 function weekdayDateInSnapshot(snap, weekdayIndex, labels = null) {
-    const idx = resolveDayIndexForWeekday(snap, weekdayIndex, labels);
-    if (idx < 0 || !snap?.date) return '';
-    return isoToDdMmYy(addDaysToIso(snap.date, idx));
+    const dayLabels = snapshotDayLabels(snap, labels);
+    const idx = resolveDayIndexForWeekday(snap, weekdayIndex, dayLabels);
+    if (idx < 0) return '';
+    const fromLabel = parseIseLabelDate(dayLabels[idx]);
+    if (fromLabel) return isoToDdMmYy(fromLabel);
+    if (!snap?.date) return '';
+    const count = Math.max(dayLabels.length, 7);
+    return isoToDdMmYy(addDaysToIso(snap.date, idx - (count - 1)));
 }
 
 function pickItemValueForWeekday(snap, item, weekdayIndex) {
@@ -108,12 +169,20 @@ function buildIseTrimmedAverageCsv(storeNumber, dateRange = {}) {
     const weeksNeeded = resolved.weeks;
     const snapshots = listWeeklySnapshots(store, dateRange, weeksNeeded);
 
-    const itemCodes = new Set();
+    const itemByCode = new Map();
     for (const snap of snapshots) {
         if (!snap) continue;
-        Object.keys(snap.items || {}).forEach((code) => itemCodes.add(code));
+        for (const [code, row] of Object.entries(snap.items || {})) {
+            if (!isIseAverageItem(row)) continue;
+            if (!itemByCode.has(code)) {
+                itemByCode.set(code, {
+                    itemCode: code,
+                    description: row.description || '',
+                });
+            }
+        }
     }
-    const sortedItems = [...itemCodes].sort();
+    const sortedItems = sortIseAverageItems([...itemByCode.values()]);
 
     const columnMeta = [];
     for (const weekday of WEEKDAY_ORDER) {
@@ -153,9 +222,9 @@ function buildIseTrimmedAverageCsv(storeNumber, dateRange = {}) {
     );
     rows.push(padRow(['Item', 'Description', ...columnMeta.map(() => '')]));
 
-    for (const code of sortedItems) {
-        const sampleItem = snapshots.map((s) => s?.items?.[code]).find(Boolean) || {};
-        const line = [code, sampleItem.description || ''];
+    for (const meta of sortedItems) {
+        const code = meta.itemCode;
+        const line = [code, meta.description || ''];
         for (const col of columnMeta) {
             if (col.type === 'gap') {
                 line.push('');
@@ -194,4 +263,7 @@ module.exports = {
     buildCombinedIseTrimmedAverageCsv,
     trimAverage,
     collectItemWeekdayValues,
+    resolveDayIndexForWeekday,
+    dayLabelToWeekdayIndex,
+    parseIseLabelDate,
 };

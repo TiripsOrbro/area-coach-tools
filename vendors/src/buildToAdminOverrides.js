@@ -30,7 +30,7 @@ function resolveOverridesPath() {
 
 const OVERRIDES_PATH = resolveOverridesPath();
 
-const DEFAULT_STOCK_WARNING_DAYS = 5;
+const DEFAULT_STOCK_WARNING_DAYS = 3;
 
 const UNIT_LABEL_RE =
     /^(boxes|bags|kgs|packs|rolls|bottles|cans|tubs|cartons|each|ea|units?|crates?|n\/a)$/i;

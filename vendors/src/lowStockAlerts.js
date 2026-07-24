@@ -6,7 +6,7 @@ const { adminOverridesForStore, readOverridesDoc } = require('./buildToAdminOver
 const { normalizeItemName } = require('./orderItemNameMatch');
 const { stockCountDisplayName } = require('./stockCountDisplayNames');
 
-const DEFAULT_STOCK_WARNING_DAYS = 5;
+const DEFAULT_STOCK_WARNING_DAYS = 3;
 const SUMMARY_CACHE_MS = Number(process.env.LOW_STOCK_SUMMARY_CACHE_MS || 15 * 60 * 1000);
 const summaryCache = new Map();
 

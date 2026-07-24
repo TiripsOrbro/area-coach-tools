@@ -2105,22 +2105,35 @@
                 const status = slot.status || 'pending';
                 const cls = `admin-forecast-progress-hour-row admin-forecast-progress-hour-row--${status}`;
                 const title = hourStatusTitle(slot);
+                const entered =
+                    slot.readValue != null && Number.isFinite(Number(slot.readValue))
+                        ? formatMoney(slot.readValue)
+                        : status === 'pending'
+                          ? '—'
+                          : '…';
                 return `<tr class="${cls}" data-hour="${escapeHtml(String(slot.hour))}">
                     <th scope="row">${escapeHtml(formatHourLabel(slot.hour))}</th>
-                    <td class="admin-history-num">${formatMoney(slot.forecast)}</td>
+                    <td class="admin-history-num admin-forecast-progress-planned">${formatMoney(slot.forecast)}</td>
+                    <td class="admin-history-num admin-forecast-progress-entered">${entered}</td>
                     <td class="admin-forecast-progress-hour-status"${title ? ` title="${escapeHtml(title)}"` : ''}>${escapeHtml(hourStatusLabel(status))}</td>
                 </tr>`;
             })
             .join('');
+        const saveNote =
+            day.savedAs === 'unchanged'
+                ? ' · Already matched in MMX'
+                : day.savedAs === 'Save' || day.savedAs === 'saved'
+                  ? ' · Saved to MMX'
+                  : '';
         return `
             <div class="admin-forecast-progress-detail-head">
                 ${buildProgressDetailHeadHtml(day, days || [], 'mmx')}
             </div>
-            <p class="admin-forecast-progress-detail-status admin-forecast-progress-live">${escapeHtml(activeHourLiveMessage(day))}</p>
+            <p class="admin-forecast-progress-detail-status admin-forecast-progress-live">${escapeHtml(activeHourLiveMessage(day))}${escapeHtml(saveNote)}</p>
             <div class="admin-forecast-progress-hour-wrap">
                 <table class="admin-table admin-forecast-progress-hour-table">
-                    <thead><tr><th scope="col">Hour</th><th scope="col">Forecast</th><th scope="col">Status</th></tr></thead>
-                    <tbody>${rows || '<tr><td colspan="3">No hourly values</td></tr>'}</tbody>
+                    <thead><tr><th scope="col">Hour</th><th scope="col">Planned</th><th scope="col">Entered</th><th scope="col">Status</th></tr></thead>
+                    <tbody>${rows || '<tr><td colspan="4">No hourly values</td></tr>'}</tbody>
                 </table>
             </div>`;
     }
@@ -2131,25 +2144,47 @@
             detailEl.innerHTML = '<p class="admin-accounts-meta">Waiting for the next day…</p>';
             return;
         }
-        if (detailEl.dataset.activeDate !== day.date) {
+        if (
+            detailEl.dataset.activeDate !== day.date ||
+            detailEl.dataset.savedAs !== String(day.savedAs || '')
+        ) {
             detailEl.dataset.activeDate = day.date;
+            detailEl.dataset.savedAs = String(day.savedAs || '');
             detailEl.innerHTML = buildProgressDayDetailHtml(day, days);
             return;
         }
         updateProgressDetailNav(detailEl, days || [], day.date);
         const liveEl = detailEl.querySelector('.admin-forecast-progress-live');
-        if (liveEl) liveEl.textContent = activeHourLiveMessage(day);
+        if (liveEl) {
+            const saveNote =
+                day.savedAs === 'unchanged'
+                    ? ' · Already matched in MMX'
+                    : day.savedAs === 'Save' || day.savedAs === 'saved'
+                      ? ' · Saved to MMX'
+                      : '';
+            liveEl.textContent = `${activeHourLiveMessage(day)}${saveNote}`;
+        }
         for (const slot of day.hourly || []) {
             const row = detailEl.querySelector(`tr[data-hour="${String(slot.hour)}"]`);
             if (!row) continue;
             const status = slot.status || 'pending';
             row.className = `admin-forecast-progress-hour-row admin-forecast-progress-hour-row--${status}`;
             const statusEl = row.querySelector('.admin-forecast-progress-hour-status');
-            if (!statusEl) continue;
-            statusEl.textContent = hourStatusLabel(status);
-            const title = hourStatusTitle(slot);
-            if (title) statusEl.setAttribute('title', title);
-            else statusEl.removeAttribute('title');
+            if (statusEl) {
+                statusEl.textContent = hourStatusLabel(status);
+                const title = hourStatusTitle(slot);
+                if (title) statusEl.setAttribute('title', title);
+                else statusEl.removeAttribute('title');
+            }
+            const enteredEl = row.querySelector('.admin-forecast-progress-entered');
+            if (enteredEl) {
+                enteredEl.textContent =
+                    slot.readValue != null && Number.isFinite(Number(slot.readValue))
+                        ? formatMoney(slot.readValue)
+                        : status === 'pending'
+                          ? '—'
+                          : '…';
+            }
         }
     }
 
@@ -2227,7 +2262,14 @@
                 const title = dayPartStatusTitle(part);
                 return `<tr class="${cls}" data-daypart-key="${escapeHtml(part.key)}">
                     <th scope="row">${escapeHtml(part.label)}</th>
-                    <td class="admin-history-num">${formatMoney(part.adjusted)}</td>
+                    <td class="admin-history-num admin-forecast-progress-planned">${formatMoney(part.adjusted)}</td>
+                    <td class="admin-history-num admin-forecast-progress-entered">${
+                        part.readValue != null && Number.isFinite(Number(part.readValue))
+                            ? formatMoney(part.readValue)
+                            : status === 'pending'
+                              ? '—'
+                              : '…'
+                    }</td>
                     <td class="admin-forecast-progress-hour-status"${title ? ` title="${escapeHtml(title)}"` : ''}>${escapeHtml(hourStatusLabel(status))}</td>
                 </tr>`;
             })
@@ -2239,8 +2281,8 @@
             <p class="admin-forecast-progress-detail-status admin-forecast-progress-live">${escapeHtml(activeDayPartLiveMessage(day, liveLabel))}</p>
             <div class="admin-forecast-progress-hour-wrap">
                 <table class="admin-table admin-forecast-progress-hour-table">
-                    <thead><tr><th scope="col">Day part</th><th scope="col">Adjusted</th><th scope="col">Status</th></tr></thead>
-                    <tbody>${rows || '<tr><td colspan="3">No day-part values</td></tr>'}</tbody>
+                    <thead><tr><th scope="col">Day part</th><th scope="col">Planned</th><th scope="col">Entered</th><th scope="col">Status</th></tr></thead>
+                    <tbody>${rows || '<tr><td colspan="4">No day-part values</td></tr>'}</tbody>
                 </table>
             </div>`;
     }
@@ -2266,11 +2308,21 @@
             const status = part.status || 'pending';
             row.className = `admin-forecast-progress-hour-row admin-forecast-progress-hour-row--${status}`;
             const statusEl = row.querySelector('.admin-forecast-progress-hour-status');
-            if (!statusEl) continue;
-            statusEl.textContent = hourStatusLabel(status);
-            const title = dayPartStatusTitle(part);
-            if (title) statusEl.setAttribute('title', title);
-            else statusEl.removeAttribute('title');
+            if (statusEl) {
+                statusEl.textContent = hourStatusLabel(status);
+                const title = dayPartStatusTitle(part);
+                if (title) statusEl.setAttribute('title', title);
+                else statusEl.removeAttribute('title');
+            }
+            const enteredEl = row.querySelector('.admin-forecast-progress-entered');
+            if (enteredEl) {
+                enteredEl.textContent =
+                    part.readValue != null && Number.isFinite(Number(part.readValue))
+                        ? formatMoney(part.readValue)
+                        : status === 'pending'
+                          ? '—'
+                          : '…';
+            }
         }
     }
 

@@ -12,6 +12,8 @@ const { getStoreList } = require('../../../stores/src/storeList');
 const { weekTotalsForStore, BACKFILL_DAYS } = require('../../../forecast/src/forecastRunner');
 const { melbourneToday, addDaysIso } = require('../../../forecast/src/planEngine');
 const storeEmails = require('../storeEmails');
+const { resolveDayIndexForWeekday } = require('../reportSubscriptions/iseTrimmedAverage');
+const { isIseAverageItem, sortIseAverageItems } = require('../reportSubscriptions/iseAverageItems');
 
 const TEMPLATE = path.join(paths.root, 'data', 'workbooks', 'Prep-Guide-Template.xlsx');
 const SOURCE_DOWNLOAD = path.join(process.env.USERPROFILE || '', 'Downloads', 'Prep Guide.xlsx');
@@ -462,30 +464,11 @@ function fillSalesSheet(sheet, storeNumber) {
     }
 }
 
-/** Map ISE Day1…Day7 (or date labels) onto Monday…Sunday index. */
+/** Map ISE Day1…Day7 (or Friday 17-Jul-26 labels) onto Monday…Sunday. */
 function iseDayIndex(snapshot, weekdayName) {
-    const labels = snapshot?.dayLabels || [];
-    for (let i = 0; i < labels.length; i++) {
-        const raw = String(labels[i] || '').trim();
-        if (!raw || /^day\s*\d+$/i.test(raw)) continue;
-        // Excel serial / ISO / AU date strings
-        let key = raw;
-        const m = raw.match(/(\d{4})-(\d{2})-(\d{2})/);
-        if (m) key = `${m[1]}-${m[2]}-${m[3]}`;
-        else {
-            const d = new Date(raw);
-            if (!Number.isNaN(d.getTime())) {
-                key = d.toISOString().slice(0, 10);
-            }
-        }
-        try {
-            if (/^\d{4}-\d{2}-\d{2}$/.test(key) && weekdayForIso(key) === weekdayName) return i;
-        } catch {
-            /* ignore */
-        }
-    }
-    const idx = WEEKDAYS.indexOf(weekdayName);
-    return idx >= 0 ? idx : 0;
+    const weekdayIndex = WEEKDAY_INDEX[weekdayName];
+    if (weekdayIndex == null) return -1;
+    return resolveDayIndexForWeekday(snapshot, weekdayIndex);
 }
 
 /**
@@ -503,6 +486,7 @@ function fillIseAverageSheet(sheet, storeNumber) {
     for (const snap of snaps) {
         if (!snap?.items) continue;
         for (const [code, row] of Object.entries(snap.items)) {
+            if (!isIseAverageItem(row)) continue;
             const key = String(code || row.itemCode || '').trim();
             if (!key) continue;
             if (!itemByCode.has(key)) {
@@ -513,6 +497,7 @@ function fillIseAverageSheet(sheet, storeNumber) {
             }
         }
     }
+    const orderedItems = sortIseAverageItems([...itemByCode.values()]);
 
     // Clear existing data rows (keep header rows 1–4), then rewrite from store ISE.
     const lastRow = Math.max(sheet.rowCount || 0, 5);
@@ -553,7 +538,8 @@ function fillIseAverageSheet(sheet, storeNumber) {
     sheet.getCell(4, 2).value = 'Description';
 
     let row = 5;
-    for (const [code, meta] of itemByCode) {
+    for (const meta of orderedItems) {
+        const code = meta.itemCode;
         sheet.getCell(row, 1).value = /^\d+$/.test(code) ? Number(code) : code;
         sheet.getCell(row, 2).value = meta.description || '';
         for (let d = 0; d < WEEKDAYS.length; d++) {
@@ -565,7 +551,7 @@ function fillIseAverageSheet(sheet, storeNumber) {
                 let v = null;
                 if (snap?.items?.[code]) {
                     const di = iseDayIndex(snap, dayName);
-                    const raw = snap.items[code].dayValues?.[di];
+                    const raw = di >= 0 ? snap.items[code].dayValues?.[di] : null;
                     v = Number(raw);
                     if (!Number.isFinite(v)) v = null;
                 }
@@ -887,7 +873,7 @@ function buildPrepGuideFillPayload(storeNumber) {
                 let v = null;
                 if (snap?.items?.[code]) {
                     const di = iseDayIndex(snap, dayName);
-                    const raw = Number(snap.items[code].dayValues?.[di]);
+                    const raw = di >= 0 ? Number(snap.items[code].dayValues?.[di]) : NaN;
                     v = Number.isFinite(raw) ? raw : null;
                 }
                 values.push(v);
