@@ -1,0 +1,20 @@
+{
+  "settings": {
+    "stockWarningDays": 5
+  },
+  "global": {},
+  "areas": {
+    "WA": {
+      "507516": {
+        "mmxCode": "507516",
+        "vendorCode": "507516",
+        "units": [
+          "Boxes",
+          "N/a",
+          "N/a"
+        ]
+      }
+    }
+  },
+  "stores": {}
+}

@@ -2046,9 +2046,11 @@ async function backfillStoreHistoryFromMmx(storeNumber, options = {}) {
 
     let browser;
     let imported = 0;
+    let skippedEmpty = 0;
     const days = [];
     try {
-        pushLog(`Starting MMX backfill for last ${daysBack} days (5 weeks)...`);
+        pushLog(`Store ${store}: starting MMX backfill for last ${daysBack} days (5 weeks).`);
+        pushLog(`Store ${store}: launching headless Chromium + logging into Macromatix as ${credentials.username}...`);
         const opened = await scraper.openMacromatixBrowser({
             storeNumber: store,
             mmxUsername: credentials.username,
@@ -2057,27 +2059,39 @@ async function backfillStoreHistoryFromMmx(storeNumber, options = {}) {
         });
         browser = opened.browser;
         const { page } = opened;
+        pushLog(`Store ${store}: opening labour scheduler page...`);
         await page.goto(LABOUR_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
+        pushLog(`Store ${store}: selecting store on labour page...`);
         await scraper.selectStoreOnPage(page, store, { waitMs: 900 });
+        pushLog(`Store ${store}: store ${store} selected.`);
 
         const today = melbourneToday();
         const missingDates = [];
         for (let offset = 1; offset <= daysBack; offset += 1) {
             missingDates.push(addDaysIso(today, -offset));
         }
-        pushLog(`Scraping ${missingDates.length} day(s) from labour scheduler...`);
+        const newest = missingDates[0];
+        const oldest = missingDates[missingDates.length - 1];
+        pushLog(
+            `Store ${store}: will scrape ${missingDates.length} calendar day(s) (${oldest} -> ${newest}, excluding today ${today}).`
+        );
         const scraped = await scraper.scrapeMissingHistoricalDays(page, missingDates, {
             timeZone: process.env.DASHBOARD_TIME_ZONE || 'Australia/Melbourne',
             onProgress: (ev) => {
                 if (ev?.message) pushLog(ev.message);
             },
         });
+        pushLog(`Store ${store}: scrape finished (${scraped.length} day response(s)). Saving history...`);
         for (const data of scraped) {
             const iso = data.dateIso;
             if (!iso) continue;
             const actualRaw = data.actual || [];
             const total = sumHourly(actualRaw);
-            if (total <= 0) continue;
+            if (total <= 0) {
+                skippedEmpty += 1;
+                continue;
+            }
+            const hoursWithSales = actualRaw.filter((v) => Number(v) > 0).length;
             upsertDay(store, iso, actualRaw, { source: 'mmx-backfill' });
             if (typeof recordForecastHistoryDay === 'function') {
                 try {
@@ -2092,27 +2106,36 @@ async function backfillStoreHistoryFromMmx(storeNumber, options = {}) {
                         },
                         { source: 'mmx-backfill', finalized: true, force: Boolean(options.force) }
                     );
-                } catch {
-                    /* ignore ledger write errors */
+                } catch (ledgerErr) {
+                    pushLog(
+                        `Store ${store}: warning - ledger write failed for ${iso}: ${ledgerErr.message || ledgerErr}`
+                    );
                 }
             }
             days.push({ dateKey: iso, actual: actualRaw, total });
             imported += 1;
+            pushLog(
+                `Store ${store}: saved ${iso} ($${Math.round(total * 100) / 100}, ${hoursWithSales} active hour(s)).`
+            );
         }
-        pushLog(`Imported ${imported} day(s) with sales into forecast history.`);
-        return { ok: true, storeNumber: store, imported, days, logs, daysBack };
+        pushLog(
+            `Store ${store}: done - imported ${imported} day(s) with sales, skipped ${skippedEmpty} empty/closed day(s).`
+        );
+        return { ok: true, storeNumber: store, imported, skippedEmpty, days, logs, daysBack };
     } catch (err) {
-        pushLog(`ERROR: ${err.message || String(err)}`);
+        pushLog(`Store ${store}: ERROR - ${err.message || String(err)}`);
         return {
             ok: false,
             storeNumber: store,
             imported,
+            skippedEmpty,
             days,
             logs,
             daysBack,
             error: err.message || String(err),
         };
     } finally {
+        pushLog(`Store ${store}: closing MMX browser...`);
         await scraper.closeBrowserQuietly(browser, 'forecast backfill');
     }
 }

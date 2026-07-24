@@ -10,6 +10,16 @@ const LOGIN_WAIT_MS = 60000;
 const NAV_WAIT_MS = 60000;
 const BUSINESS_PICKER_WAIT_MS = 90000;
 const LAUNCH_TIMEOUT_MS = Number(process.env.LIFELENZ_LAUNCH_TIMEOUT_MS || 45000);
+/** Area coach scope in the LifeLenz location tree (e.g. T22). Override with LIFELENZ_AREA. */
+const DEFAULT_LIFELENZ_AREA = 'T22';
+
+function resolveLifeLenzArea(override) {
+    const raw =
+        override != null && String(override).trim()
+            ? String(override).trim()
+            : String(process.env.LIFELENZ_AREA || DEFAULT_LIFELENZ_AREA).trim();
+    return raw || DEFAULT_LIFELENZ_AREA;
+}
 
 function resolveLifeLenzHeadless(overrides = {}) {
     if (overrides.headless === false) return false;
@@ -169,7 +179,7 @@ async function selectBusinessOnExplorerPage(page) {
 
     const onExplorer = await isOnBusinessExplorer(page);
     if (!onExplorer) {
-        throw new Error('Expected LifeLenz Business Explorer page after login but URL was: ' + (await page.url()));
+        throw new Error('Expected LifeLenz Business Explorer page after login but URL was: ' + page.url());
     }
 
     await waitForBusinessExplorerTile(page);
@@ -251,7 +261,32 @@ async function fillLifeLenzLogin(page, email, password) {
     await pasteIntoSelector(page, '#email', String(email || '').trim(), 8000);
     await pasteIntoSelector(page, '#password', String(password || ''), 8000);
     await page.click('button[type="submit"]');
-    await waitForPostLoginLanding(page, LOGIN_WAIT_MS);
+    try {
+        await waitForPostLoginLanding(page, LOGIN_WAIT_MS);
+    } catch (err) {
+        const stillLogin = await page.$('#email').catch(() => null);
+        let href = '';
+        try {
+            href = String(page.url() || '');
+        } catch (_) {
+            href = '';
+        }
+        if (stillLogin) {
+            const loginError = await page
+                .evaluate(() => {
+                    const el = document.querySelector('[role="alert"], .text-danger, .error, p.text-red');
+                    return el ? String(el.textContent || '').trim() : '';
+                })
+                .catch(() => '');
+            throw new Error(
+                loginError ||
+                    `LifeLenz login timed out after ${Math.round(LOGIN_WAIT_MS / 1000)}s (still on login page). Check email/password.`
+            );
+        }
+        throw new Error(
+            `LifeLenz login timed out after ${Math.round(LOGIN_WAIT_MS / 1000)}s waiting for Business Explorer / store shell (url: ${href}).`
+        );
+    }
 }
 
 async function selectTacoBellColBusiness(page) {
@@ -313,6 +348,112 @@ async function waitForVisibleStoreDropdownOptions(page, timeoutMs = 5000) {
         },
         { timeoutMs, pollMs: 100, label: 'store dropdown options' }
     );
+}
+
+async function countVisibleStoreLabels(page) {
+    const labels = await readVisibleStoreOptionLabels(page);
+    if (labels.length) return labels.length;
+    return page.evaluate(() => {
+        let count = 0;
+        for (const el of document.querySelectorAll('button, a, [role="option"], [role="menuitem"], li, div')) {
+            const r = el.getBoundingClientRect();
+            if (r.width <= 0 || r.height <= 0) continue;
+            const text = (el.textContent || '').replace(/\s+/g, ' ').trim();
+            if (/^\d{4}\s*-\s*\S/.test(text) && text.length < 120) count += 1;
+        }
+        return count;
+    });
+}
+
+/**
+ * Some LifeLenz accounts show a location tree (Taco Bell - COL → T01/T02/T21/T22/…)
+ * before store rows. Select the coach area so stores become visible.
+ */
+async function selectLifeLenzArea(page, areaCode, options = {}) {
+    const area = resolveLifeLenzArea(areaCode);
+    if (!area) return false;
+
+    const storeCount = await countVisibleStoreLabels(page);
+    if (storeCount >= 1) {
+        const areaAlreadyActive = await page.evaluate((code) => {
+            const nodes = document.querySelectorAll(
+                '[aria-selected="true"], [aria-current="true"], .active, [class*="selected"], [class*="bg-"]'
+            );
+            for (const el of nodes) {
+                const text = (el.textContent || '').replace(/\s+/g, ' ').trim();
+                if (text === code || new RegExp(`^${code}\\b`, 'i').test(text)) return true;
+            }
+            return false;
+        }, area);
+        if (areaAlreadyActive || storeCount >= 2) return true;
+    }
+
+    const clicked = await page.evaluate((code) => {
+        const escaped = String(code).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const exact = new RegExp(`^\\s*${escaped}\\s*$`, 'i');
+        const candidates = [
+            ...document.querySelectorAll('[role="treeitem"]'),
+            ...document.querySelectorAll('[role="option"]'),
+            ...document.querySelectorAll('[role="menuitem"]'),
+            ...document.querySelectorAll('button, a, li, div, span'),
+        ];
+
+        const scoreClickable = (el) => {
+            const r = el.getBoundingClientRect();
+            if (r.width <= 0 || r.height <= 0 || r.width > 420) return -1;
+            const text = (el.textContent || '').replace(/\s+/g, ' ').trim();
+            const ownText = [...el.childNodes]
+                .filter((n) => n.nodeType === Node.TEXT_NODE)
+                .map((n) => n.textContent || '')
+                .join('')
+                .replace(/\s+/g, ' ')
+                .trim();
+            const label = ownText || text;
+            if (!(exact.test(label) || label === code)) return -1;
+            // Prefer left-rail tree items (area list) over the right-pane header.
+            let score = 100;
+            if (r.left < window.innerWidth * 0.45) score += 40;
+            if (label.length <= 6) score += 20;
+            if (el.getAttribute('role') === 'treeitem') score += 30;
+            score -= Math.abs(r.width - 80) / 20;
+            return score;
+        };
+
+        let best = null;
+        let bestScore = -1;
+        for (const el of candidates) {
+            const score = scoreClickable(el);
+            if (score > bestScore) {
+                best = el;
+                bestScore = score;
+            }
+        }
+        if (!best) return false;
+        best.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        best.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }));
+        best.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window }));
+        best.click();
+        return true;
+    }, area);
+
+    if (!clicked) {
+        if (options.required) {
+            throw new Error(`Could not select LifeLenz area ${area} in the location picker.`);
+        }
+        return false;
+    }
+
+    const stores = await pollAuthUntil(
+        async () => {
+            const n = await countVisibleStoreLabels(page);
+            return n >= 1 ? n : null;
+        },
+        { timeoutMs: options.timeoutMs || 10000, pollMs: 150, label: `area ${area} stores` }
+    );
+    if (!stores && options.required) {
+        throw new Error(`Selected LifeLenz area ${area} but no stores appeared.`);
+    }
+    return Boolean(stores);
 }
 
 async function collectStoreLabelsFromOpenDropdown(page) {
@@ -403,6 +544,8 @@ async function openStoreDropdown(page) {
         const el = await page.$(selector);
         if (!el) continue;
         await el.click().catch(() => null);
+        // New accounts: Area (e.g. T22) must be selected before store rows show.
+        await selectLifeLenzArea(page, resolveLifeLenzArea(), { required: false }).catch(() => false);
         await waitForVisibleStoreDropdownOptions(page, 5000);
         const labels = await collectStoreLabelsFromOpenDropdown(page);
         // Stop at the first trigger that opens a real store list — do not
@@ -532,15 +675,18 @@ function getDevLifeLenzCredentials() {
 
 module.exports = {
     LIFELENZ_ADMIN_URL,
+    DEFAULT_LIFELENZ_AREA,
     parseStoreLabel,
     cleanStoreDisplayName,
     dedupeStores,
     resolveLifeLenzHeadless,
+    resolveLifeLenzArea,
     getLifeLenzLaunchOptions,
     verifyLifeLenzLogin,
     createAuthenticatedLifeLenzSession,
     performLifeLenzLogin,
     listAccessibleStores,
+    selectLifeLenzArea,
     selectTacoBellColBusiness,
     selectBusinessOnExplorerPage,
     waitForBusinessExplorerUrl,

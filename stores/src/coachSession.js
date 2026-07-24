@@ -1,5 +1,5 @@
 /**
- * Active Area Coach (Ash / Tom) session: portal creds + store scope + alert email.
+ * Active Area Coach (WA / VIC / Taco Bell) session: portal creds + store scope + alert email.
  */
 const fs = require('fs');
 const path = require('path');
@@ -14,6 +14,7 @@ function emptySession() {
         region: null,
         enabledStores: [],
         alertEmail: '',
+        downloadFolder: '',
         mmx: { username: '', password: '' },
         lifelenz: { email: '', password: '' },
         updatedAt: null,
@@ -69,6 +70,7 @@ function maskSession(session = readSession()) {
         region: session.region,
         enabledStores: [...(session.enabledStores || [])],
         alertEmail: session.alertEmail || '',
+        downloadFolder: session.downloadFolder || '',
         mmx: {
             username: session.mmx?.username || '',
             configured: Boolean(session.mmx?.username && session.mmx?.password),

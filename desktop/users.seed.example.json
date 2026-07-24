@@ -1,10 +1,14 @@
 {
-  "ash": {
-    "mmx": { "username": "REPLACE_ASH_MMX_USER", "password": "REPLACE_ASH_MMX_PASS" },
-    "lifelenz": { "email": "ash@example.com", "password": "REPLACE_ASH_LIFELENZ_PASS" }
+  "wa": {
+    "mmx": { "username": "REPLACE_WA_MMX_USER", "password": "REPLACE_WA_MMX_PASS" },
+    "lifelenz": { "email": "wa@example.com", "password": "REPLACE_WA_LIFELENZ_PASS" }
   },
-  "tom": {
-    "mmx": { "username": "REPLACE_TOM_MMX_USER", "password": "REPLACE_TOM_MMX_PASS" },
-    "lifelenz": { "email": "tom@example.com", "password": "REPLACE_TOM_LIFELENZ_PASS" }
+  "vic": {
+    "mmx": { "username": "REPLACE_VIC_MMX_USER", "password": "REPLACE_VIC_MMX_PASS" },
+    "lifelenz": { "email": "vic@example.com", "password": "REPLACE_VIC_LIFELENZ_PASS" }
+  },
+  "tacobell": {
+    "mmx": { "username": "REPLACE_TB_MMX_USER", "password": "REPLACE_TB_MMX_PASS" },
+    "lifelenz": { "email": "tacobell@example.com", "password": "REPLACE_TB_LIFELENZ_PASS" }
   }
 }

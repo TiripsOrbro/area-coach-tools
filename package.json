@@ -11,6 +11,9 @@
     "desktop:dist": "npm --prefix desktop run dist",
     "desktop:pack": "npm --prefix desktop run pack",
     "desktop:install": "npm --prefix desktop install",
+    "buildto:install": "npm --prefix mmx-report-automation install --no-fund --no-audit",
+    "postinstall": "npm run buildto:install",
+    "setup:build": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/Build-SetupExe.ps1",
     "pm2:start": "pm2 start ecosystem.config.cjs",
     "pm2:logs": "pm2 logs area-coach-tools"
   },

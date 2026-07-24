@@ -10,6 +10,9 @@
     let historyWeekStart = null;
     let historyDateBounds = null;
     let historyEditState = null;
+    let historyViewMode = 'week'; // 'week' | 'day'
+    let historyDeepDiveWeekday = null;
+    let historyDeepDiveData = null;
     let pendingSubmitStores = [];
     let previewData = null;
     let previewActiveStore = null;
@@ -536,14 +539,28 @@
                 <h2 id="admin-forecast-history-title">Sales history</h2>
                 <p class="admin-accounts-meta" id="admin-forecast-history-meta"></p>
                 <div class="admin-forecast-history-toolbar" id="admin-forecast-history-toolbar">
-                    <label class="admin-forecast-week-start-label">Week starting
-                        <input type="date" id="admin-forecast-history-week-start" />
-                    </label>
-                    <div class="admin-forecast-history-nav">
-                        <button type="button" class="mic-settings-btn" id="admin-forecast-history-prev-week" title="Previous week">← Prev</button>
-                        <button type="button" class="mic-settings-btn" id="admin-forecast-history-next-week" title="Next week">Next →</button>
-                        <button type="button" class="mic-settings-btn admin-btn-primary" id="admin-forecast-history-backfill" hidden>Backfill data</button>
+                    <div class="admin-forecast-history-view-toggle" role="group" aria-label="History view">
+                        <button type="button" class="mic-settings-btn admin-forecast-history-view-btn is-active" data-history-view="week">Week</button>
+                        <button type="button" class="mic-settings-btn admin-forecast-history-view-btn" data-history-view="day">By day</button>
                     </div>
+                    <div class="admin-forecast-history-week-controls" id="admin-forecast-history-week-controls">
+                        <label class="admin-forecast-week-start-label">Week starting
+                            <input type="date" id="admin-forecast-history-week-start" />
+                        </label>
+                        <div class="admin-forecast-history-nav">
+                            <button type="button" class="mic-settings-btn" id="admin-forecast-history-prev-week" title="Previous week">← Prev</button>
+                            <button type="button" class="mic-settings-btn" id="admin-forecast-history-next-week" title="Next week">Next →</button>
+                        </div>
+                    </div>
+                    <div class="admin-forecast-history-day-controls" id="admin-forecast-history-day-controls" hidden>
+                        <div class="admin-forecast-deep-dive-tabs" id="admin-forecast-deep-dive-tabs" role="tablist" aria-label="Weekday">
+                            ${WEEKDAYS.map(
+                                (day) =>
+                                    `<button type="button" class="mic-settings-btn admin-forecast-deep-dive-tab" role="tab" data-deep-dive-weekday="${day.value}">${day.label}</button>`
+                            ).join('')}
+                        </div>
+                    </div>
+                    <button type="button" class="mic-settings-btn admin-btn-primary" id="admin-forecast-history-backfill" hidden>Backfill data</button>
                 </div>
                 <div id="admin-forecast-history-edit" class="admin-forecast-history-edit" hidden></div>
                 <div id="admin-forecast-history-body"></div>
@@ -579,6 +596,27 @@
             const force = btn?.dataset.backfillForce === '1';
             void runForecastBackfill([historyStoreNumber], { refreshHistory: true, force });
         });
+        historyBackdrop.querySelector('#admin-forecast-history-toolbar')?.addEventListener('click', (event) => {
+            const viewBtn = event.target.closest('[data-history-view]');
+            if (viewBtn) {
+                const mode = viewBtn.getAttribute('data-history-view') === 'day' ? 'day' : 'week';
+                if (mode === historyViewMode) return;
+                historyViewMode = mode;
+                syncHistoryViewToolbar();
+                if (!historyStoreNumber) return;
+                if (mode === 'day') void loadDeepDive(historyStoreNumber, historyDeepDiveWeekday);
+                else void loadHistoryGrid(historyStoreNumber, historyWeekStart);
+                return;
+            }
+            const dayTab = event.target.closest('[data-deep-dive-weekday]');
+            if (dayTab && historyViewMode === 'day') {
+                const weekday = Number(dayTab.getAttribute('data-deep-dive-weekday'));
+                if (!Number.isFinite(weekday) || weekday === historyDeepDiveWeekday) return;
+                historyDeepDiveWeekday = weekday;
+                syncHistoryViewToolbar();
+                if (historyStoreNumber) void loadDeepDive(historyStoreNumber, weekday);
+            }
+        });
         historyBackdrop.querySelector('#admin-forecast-history-edit')?.addEventListener('click', (event) => {
             const btn = event.target.closest('[data-history-edit-action]');
             if (!btn) return;
@@ -588,6 +626,48 @@
             else if (action === 'delete') void deleteHistoryEditDay();
         });
         return historyBackdrop;
+    }
+
+    function defaultDeepDiveWeekday() {
+        const today = new Date();
+        // Match Australia/Melbourne weekday when possible; fall back to local.
+        try {
+            const label = new Intl.DateTimeFormat('en-US', {
+                timeZone: 'Australia/Melbourne',
+                weekday: 'short',
+            }).format(today);
+            const map = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+            if (map[label] != null) return map[label];
+        } catch (_) {
+            /* ignore */
+        }
+        return today.getDay();
+    }
+
+    function syncHistoryViewToolbar() {
+        const root = historyBackdrop;
+        if (!root) return;
+        root.querySelectorAll('[data-history-view]').forEach((btn) => {
+            const active = btn.getAttribute('data-history-view') === historyViewMode;
+            btn.classList.toggle('is-active', active);
+            btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+        const weekControls = root.querySelector('#admin-forecast-history-week-controls');
+        const dayControls = root.querySelector('#admin-forecast-history-day-controls');
+        if (weekControls) weekControls.hidden = historyViewMode !== 'week';
+        if (dayControls) dayControls.hidden = historyViewMode !== 'day';
+        if (historyDeepDiveWeekday == null) historyDeepDiveWeekday = defaultDeepDiveWeekday();
+        root.querySelectorAll('[data-deep-dive-weekday]').forEach((btn) => {
+            const active = Number(btn.getAttribute('data-deep-dive-weekday')) === historyDeepDiveWeekday;
+            btn.classList.toggle('is-active', active);
+            btn.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+        const edit = root.querySelector('#admin-forecast-history-edit');
+        if (edit && historyViewMode === 'day') {
+            edit.hidden = true;
+            historyEditState = null;
+            edit.innerHTML = '';
+        }
     }
 
     function close() {
@@ -2609,6 +2689,9 @@
         historyGridData = null;
         historyWeekStart = null;
         historyEditState = null;
+        historyViewMode = 'week';
+        historyDeepDiveWeekday = null;
+        historyDeepDiveData = null;
         closeHistoryEditForm();
     }
 
@@ -2914,6 +2997,17 @@
         const res = await fetch(`/api/admin/forecast/history-grid?${params}`, { credentials: 'same-origin' });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.success) throw new Error(data.error || 'Could not load history grid.');
+        return data;
+    }
+
+    async function fetchDeepDive(storeNumber, weekday) {
+        const params = new URLSearchParams({ store: storeNumber });
+        if (weekday != null && Number.isFinite(Number(weekday))) {
+            params.set('weekday', String(weekday));
+        }
+        const res = await fetch(`/api/admin/forecast/deep-dive?${params}`, { credentials: 'same-origin' });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success) throw new Error(data.error || 'Could not load forecast deep dive.');
         return data;
     }
 
@@ -3653,6 +3747,7 @@
         }
 
         meta.textContent = `Actual sales ${formatShortDate(grid.weekStart)} – ${formatShortDate(grid.weekEnd)}.`;
+        syncHistoryViewToolbar();
 
         body.innerHTML =
             '<section class="admin-forecast-history-section" id="admin-forecast-history-actual" aria-label="Historical actual sales"></section>';
@@ -3662,6 +3757,95 @@
         const actualGrid = document.createElement('div');
         actualSection.appendChild(actualGrid);
         renderHistoryWeekGrid(actualGrid, grid);
+    }
+
+    function deepDiveCellClass(role) {
+        if (role === 'low-outlier') return 'admin-history-num admin-forecast-outlier admin-forecast-outlier--low';
+        if (role === 'high-outlier') return 'admin-history-num admin-forecast-outlier admin-forecast-outlier--high';
+        if (role === 'ignored-day') return 'admin-history-num admin-forecast-deep-dive-ignored';
+        if (role === 'missing') return 'admin-history-num admin-forecast-deep-dive-missing';
+        return 'admin-history-num';
+    }
+
+    function renderDeepDiveGrid(container, data) {
+        if (!data?.rows?.length) {
+            container.innerHTML = '<p>No same-weekday history in the forecast lookback window.</p>';
+            return;
+        }
+        const colHead = (data.columns || [])
+            .map((col) => {
+                const ignored = col.ignored
+                    ? '<span class="admin-accounts-meta">Ignored</span>'
+                    : '';
+                return `<th class="${col.ignored ? 'admin-forecast-deep-dive-col--ignored' : ''}">
+                    <span class="admin-history-col-label">${escapeHtml(col.label || col.dateKey || '')}</span>
+                    <span class="admin-accounts-meta">${escapeHtml(col.dateKey || '')}</span>
+                    ${ignored}
+                </th>`;
+            })
+            .join('');
+        const rows = (data.rows || [])
+            .map((row) => {
+                const cells = (row.cells || [])
+                    .map((cell) => {
+                        const text =
+                            cell.role === 'ignored-day'
+                                ? '—'
+                                : cell.value == null
+                                  ? '-'
+                                  : formatMoney(cell.value);
+                        const title =
+                            cell.role === 'low-outlier'
+                                ? 'Low outlier (dropped from average)'
+                                : cell.role === 'high-outlier'
+                                  ? 'High outlier (dropped from average)'
+                                  : cell.role === 'ignored-day'
+                                    ? 'Day ignored in forecast'
+                                    : '';
+                        return `<td class="${deepDiveCellClass(cell.role)}"${title ? ` title="${escapeHtml(title)}"` : ''}>${text}</td>`;
+                    })
+                    .join('');
+                return `<tr>
+                    <th scope="row" class="admin-history-hour">${escapeHtml(row.label || '')}</th>
+                    ${cells}
+                    <td class="admin-history-num admin-forecast-deep-dive-average">${formatMoney(row.average)}</td>
+                </tr>`;
+            })
+            .join('');
+        container.innerHTML = `
+            <div class="admin-history-grid-wrap admin-forecast-deep-dive-grid-wrap">
+                <table class="admin-table admin-history-grid admin-forecast-deep-dive-grid">
+                    <thead>
+                        <tr>
+                            <th scope="col">Hour</th>
+                            ${colHead}
+                            <th scope="col" class="admin-forecast-deep-dive-average">Average</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>
+            <p class="admin-forecast-deep-dive-legend">
+                <span class="admin-forecast-outlier admin-forecast-outlier--low admin-forecast-outlier-swatch">Low</span>
+                <span class="admin-forecast-outlier admin-forecast-outlier--high admin-forecast-outlier-swatch">High</span>
+                ${escapeHtml(data.legend || 'With 3+ samples, the highest and lowest values for that hour are dropped, then the rest are averaged.')}
+            </p>`;
+    }
+
+    function renderDeepDive(root, data) {
+        const body = root.querySelector('#admin-forecast-history-body');
+        const meta = root.querySelector('#admin-forecast-history-meta');
+        root.querySelector('#admin-forecast-history-title').textContent =
+            `Sales history - ${data.storeNumber}`;
+        const peerLabel = data.peerDays === 1 ? '1 peer day' : `${data.peerDays || 0} peer days`;
+        meta.textContent = `${data.weekdayLabel || 'Day'} averages from the last ${data.historyDaysUsed || 0} history days (${peerLabel}). Highlighted cells are dropped from that hour's average.`;
+        syncHistoryViewToolbar();
+        body.innerHTML = `
+            <section class="admin-forecast-history-section" id="admin-forecast-history-deep-dive" aria-label="Forecast deep dive">
+                <h3 class="admin-forecast-history-heading">${escapeHtml(data.weekdayLabel || 'Day')} — past weeks vs trimmed average</h3>
+                <div id="admin-forecast-deep-dive-grid"></div>
+            </section>`;
+        renderDeepDiveGrid(body.querySelector('#admin-forecast-deep-dive-grid'), data);
     }
 
     async function loadHistoryGrid(storeNumber, weekStart) {
@@ -3684,12 +3868,32 @@
         }
     }
 
+    async function loadDeepDive(storeNumber, weekday) {
+        const root = ensureHistoryBackdrop();
+        root.querySelector('#admin-forecast-history-error').textContent = '';
+        root.querySelector('#admin-forecast-history-body').innerHTML = '<p>Loading…</p>';
+        closeHistoryEditForm();
+        try {
+            const data = await fetchDeepDive(storeNumber, weekday);
+            historyDeepDiveData = data;
+            if (Number.isFinite(Number(data.weekday))) historyDeepDiveWeekday = Number(data.weekday);
+            renderDeepDive(root, data);
+        } catch (error) {
+            root.querySelector('#admin-forecast-history-error').textContent = error.message;
+            root.querySelector('#admin-forecast-history-body').innerHTML = '';
+            syncHistoryViewToolbar();
+        }
+    }
+
     async function openHistory(storeNumber, { weekStart } = {}) {
         historyStoreNumber = storeNumber;
         historyWeekStart = weekStart || null;
+        historyViewMode = 'week';
+        if (historyDeepDiveWeekday == null) historyDeepDiveWeekday = defaultDeepDiveWeekday();
         const root = ensureHistoryBackdrop();
         root.hidden = false;
         syncBackfillButtons(storeNumber);
+        syncHistoryViewToolbar();
         root.querySelector('#admin-forecast-history-error').textContent = '';
         await loadHistoryGrid(storeNumber, historyWeekStart);
     }
@@ -4642,7 +4846,11 @@
                 await refresh(root);
                 if (refreshHistory && historyStoreNumber && stores.includes(historyStoreNumber)) {
                     syncBackfillButtons(historyStoreNumber);
-                    await loadHistoryGrid(historyStoreNumber, historyWeekStart);
+                    if (historyViewMode === 'day') {
+                        await loadDeepDive(historyStoreNumber, historyDeepDiveWeekday);
+                    } else {
+                        await loadHistoryGrid(historyStoreNumber, historyWeekStart);
+                    }
                 }
             }
         } catch (error) {

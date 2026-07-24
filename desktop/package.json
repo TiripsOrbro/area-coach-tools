@@ -1,7 +1,7 @@
 {
   "name": "area-coach-tools-desktop",
   "version": "1.0.0",
-  "description": "Area Coach Tools — local Windows app (Ash / Tom login)",
+  "description": "Area Coach Tools — local Windows app (WA / VIC / Taco Bell login)",
   "main": "src/coach-main.js",
   "author": "Orbro",
   "license": "ISC",

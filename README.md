@@ -1,6 +1,6 @@
 # Area Coach Tools
 
-Standalone Windows admin app for area coaches (Ash / Tom):
+Standalone Windows admin app for area coaches (WA / VIC / Taco Bell):
 
 - Forecast (history → plan → MMX / LifeLenz)
 - Build-to via Excel master workbook
@@ -10,28 +10,28 @@ Standalone Windows admin app for area coaches (Ash / Tom):
 
 Electron desktop shell with coach login, store scope, and portal credentials.
 
-## One-file install (recommended)
+## Steam-style install (recommended)
 
-1. Install [Git](https://git-scm.com/download/win) and [Node.js 18+](https://nodejs.org/).
-2. Download **`Install-AreaCoachTools.cmd`** from this repo (or copy it anywhere).
-3. Double-click it.
+1. Create a **local** folder for the app (example: `D:\AreaCoachTools` — avoid OneDrive).
+2. Put these files in that folder:
+   - **`Area Coach Tools.exe`** (from `dist/`, or build with `npm run setup:build`)
+   - **`Install-Prerequisites.cmd`** + **`Install-Prerequisites.ps1`** (first-time PCs)
+3. On a new PC, double-click **`Install-Prerequisites.cmd`** first (installs Git + Node.js; may ask for admin).
+4. Then double-click **`Area Coach Tools.exe`**.
 
-The installer:
+First run of the .exe installs **into the same folder**:
 
-- Clones / updates from `https://github.com/TiripsOrbro/area-coach-tools`
-- Installs into `%LOCALAPPDATA%\Programs\AreaCoachTools`
-- Runs `npm install` (server + desktop)
-- Creates **Desktop** and **Start Menu** shortcuts
+- Downloads / updates the app from GitHub into that folder
+- Runs `npm install` (server + desktop + built-in Build-to)
+- Creates Desktop / Start Menu shortcuts
 
-Each shortcut launch pulls the latest Git `main`, then starts the desktop app.
+Day-to-day: open the same **`Area Coach Tools.exe`** (or the shortcut). Each open checks GitHub for updates first.
 
-PowerShell equivalent:
+Build the .exe from source:
 
 ```powershell
-irm https://raw.githubusercontent.com/TiripsOrbro/area-coach-tools/main/Install-AreaCoachTools.ps1 | iex
-# or, after download:
-.\Install-AreaCoachTools.ps1
-.\Install-AreaCoachTools.ps1 -Quiet -Launch
+npm run setup:build
+# -> dist\Area Coach Tools.exe
 ```
 
 ## Dev run (this folder)
@@ -41,24 +41,31 @@ cd "Y:\Taco Bell Dashboard\Area Coach Tools"
 copy .env.example .env   # first time — edit STORE_* paths
 npm install
 npm run desktop:install
-npm run desktop:start    # Electron (Ash / Tom)
+npm run desktop:start    # Electron (WA / VIC / Taco Bell)
 # or API only:
 npm start                # http://localhost:3100/admin/
 ```
 
 ## Excel build-to
 
-Uses sibling project `mmx-report-automation` (`npm run excel-only`).  
-Override with `MMX_REPORT_AUTOMATION_DIR` in `.env` if needed.
+Build-to automation is **built into this app** under `mmx-report-automation/` (OH / OO / ISE download, Excel merge, MMX orders).
 
-Workbook copy: `data/workbooks/Build-To-Master.xlsx` (Edit opens Excel from the admin UI).
+```powershell
+npm install              # also runs buildto:install via postinstall
+npm run buildto:install  # nested deps only
+```
+
+Optional override: `MMX_REPORT_AUTOMATION_DIR` in `.env` (defaults to the in-repo folder).
+
+Prefer `Downloads\Build To Master File.xlsx`; fallback copy: `data/workbooks/Build-To-Master.xlsx`.
 
 ## Account
 
 In the desktop app: **Account** menu → MMX / LifeLenz, alert email, tick stores in your region, Prep Guide store emails.
 
-- **Ash** → WA (`3901–3904` by default)
-- **Tom** → all VIC stores
+- **WA** → WA stores (`3901–3904` by default)
+- **VIC** → all VIC stores
+- **Taco Bell** → all stores (WA + VIC + others in storelist)
 
 Optional seed (once): copy `desktop/users.seed.example.json` → `desktop/users.seed.json`.
 

@@ -74,6 +74,19 @@ function datesForWeeks(weeks = 3, timeZone) {
     return { dates: out, weekKeys, thisMonday };
 }
 
+/**
+ * Dates to write into MMX / LifeLenz.
+ * Current week: from tomorrow only (past + today are locked in Manager Forecast).
+ * Matches live-dashboard submitDatesForWeek behaviour.
+ */
+function submitDatesForWeeks(weeks = 3, timeZone) {
+    const { dates, weekKeys, thisMonday } = datesForWeeks(weeks, timeZone);
+    const today = melbourneToday(timeZone);
+    const tomorrow = addDaysIso(today, 1);
+    const submitDates = dates.filter((d) => d >= tomorrow);
+    return { dates: submitDates, weekKeys, thisMonday, today, tomorrow };
+}
+
 function sumPlanDays(days, dateKeys) {
     const set = new Set(dateKeys);
     let total = 0;
@@ -164,40 +177,226 @@ function listStoreStatuses(storeNumbers = null) {
     return list.map((n) => storeStatusSummary(n));
 }
 
-async function submitPlanToPortals(storeNumber, plan, { mmx = true, lifelenz = true } = {}) {
-    const results = { mmx: null, lifelenz: null };
-    const activeDays = (plan.days || []).filter((d) => !d.skipped && d.hourly?.length);
+/** Adapt planEngine days to portal shape (date + {hour,forecast}[]). */
+function toPortalPlanDays(plan) {
+    const RAW_BASE_HOUR = 5;
+    return (plan?.days || [])
+        .filter((d) => !d.skipped && Array.isArray(d.hourly) && d.hourly.length)
+        .map((d) => {
+            const hourly = d.hourly.map((slot, i) => {
+                if (slot && typeof slot === 'object') {
+                    return {
+                        hour: Number(slot.hour ?? RAW_BASE_HOUR + i),
+                        forecast: Math.round(Number(slot.forecast ?? slot.value ?? 0) || 0),
+                    };
+                }
+                // Legacy number[] — Macromatix raw arrays are 5AM-based, not midnight.
+                return {
+                    hour: RAW_BASE_HOUR + i,
+                    forecast: Math.round(Number(slot) || 0),
+                };
+            });
+            const date = String(d.date || d.dateKey || '').trim();
+            const forecastTotal =
+                d.forecastTotal != null
+                    ? Number(d.forecastTotal) || 0
+                    : Number(d.total) ||
+                      hourly.reduce((sum, h) => sum + (Number(h.forecast) || 0), 0);
+            return {
+                date,
+                dateKey: date,
+                weekday: d.weekday,
+                forecastTotal,
+                total: forecastTotal,
+                hourly,
+                openHour: d.openHour,
+                closeHour: d.closeHour,
+            };
+        })
+        .filter((d) => Boolean(d.date));
+}
 
+function portalResultOk(result) {
+    if (result == null) return true;
+    if (result.ok === false || result.error) return false;
+    if (result.mmx?.ok === false || result.mmx?.error) return false;
+    if (result.lifelenz?.ok === false || result.lifelenz?.error) return false;
+    return true;
+}
+
+function portalErrorText(result, label) {
+    if (!result || portalResultOk(result)) return null;
+    const err =
+        result.error ||
+        result.mmx?.error ||
+        result.lifelenz?.error ||
+        result.message ||
+        'failed';
+    return `${label}: ${err}`;
+}
+
+async function submitMmxPlan(storeNumber, portalDays, { emit, wrap, shouldAbort }) {
+    emit({
+        type: 'store-start',
+        platform: 'mmx',
+        dayCount: portalDays.length,
+    });
+    const forecastScraper = require('../../mmx/src/forecast/forecastScraper');
+    if (typeof forecastScraper.writeForecastPlanToMmx === 'function') {
+        const written = await forecastScraper.writeForecastPlanToMmx(storeNumber, portalDays, {
+            onProgress: wrap('mmx'),
+            shouldAbort,
+        });
+        emit({ type: 'store-done', platform: 'mmx', ok: true });
+        return { ok: true, ...written };
+    }
+    if (typeof forecastScraper.submitForecastPlan === 'function') {
+        const written = await forecastScraper.submitForecastPlan(storeNumber, portalDays, {
+            onProgress: wrap('mmx'),
+            shouldAbort,
+        });
+        emit({ type: 'store-done', platform: 'mmx', ok: true });
+        return { ok: true, ...written };
+    }
+    emit({ type: 'store-done', platform: 'mmx', ok: true, planOnly: true });
+    return { ok: true, planOnly: true, message: 'MMX submit stub — plan generated.' };
+}
+
+async function submitLifelenzPlan(storeNumber, portalDays, { emit, wrap, shouldAbort }) {
+    emit({ type: 'lifelenz-phase-start' });
+    let credentials = {};
+    try {
+        const { readSession } = require('../../stores/src/coachSession');
+        credentials = readSession()?.lifelenz || {};
+    } catch {
+        credentials = {};
+    }
+    const email = String(credentials.email || '').trim();
+    const password = String(credentials.password || '');
+    if (!email || !password) {
+        const error = 'LifeLenz credentials not set — add email/password in Account settings.';
+        emit({ type: 'store-error', platform: 'lifelenz', error });
+        return { ok: false, error };
+    }
+
+    emit({
+        type: 'store-start',
+        platform: 'lifelenz',
+        dayCount: portalDays.length,
+    });
+    emit({ type: 'session-start', platform: 'lifelenz' });
+
+    const lifelenzScraper = require('../../lifelenz/src/lifelenzForecastScraper');
+    if (typeof lifelenzScraper.writeForecastPlanToLifeLenz === 'function') {
+        const written = await lifelenzScraper.writeForecastPlanToLifeLenz(
+            storeNumber,
+            portalDays,
+            credentials,
+            { onProgress: wrap('lifelenz'), shouldAbort }
+        );
+        emit({ type: 'store-complete', platform: 'lifelenz', ok: true });
+        return { ok: true, ...written };
+    }
+    if (typeof lifelenzScraper.submitForecastPlan === 'function') {
+        const written = await lifelenzScraper.submitForecastPlan(storeNumber, portalDays, {
+            onProgress: wrap('lifelenz'),
+            shouldAbort,
+        });
+        emit({ type: 'store-complete', platform: 'lifelenz', ok: true });
+        return { ok: true, ...written };
+    }
+    if (typeof lifelenzScraper.writeForecastToLifeLenz === 'function') {
+        const written = await lifelenzScraper.writeForecastToLifeLenz(storeNumber, portalDays, {
+            onProgress: wrap('lifelenz'),
+            shouldAbort,
+        });
+        emit({ type: 'store-complete', platform: 'lifelenz', ok: true });
+        return { ok: true, ...written };
+    }
+    emit({ type: 'store-complete', platform: 'lifelenz', ok: true, planOnly: true });
+    return {
+        ok: true,
+        planOnly: true,
+        message: 'LifeLenz submit stub — plan generated.',
+    };
+}
+
+async function submitPlanToPortals(storeNumber, plan, options = {}) {
+    const mmx = options.mmx !== false;
+    const lifelenz = options.lifelenz !== false;
+    const onProgress = typeof options.onProgress === 'function' ? options.onProgress : null;
+    const shouldAbort =
+        typeof options.shouldAbort === 'function' ? options.shouldAbort : () => false;
+    const emit = (payload) => {
+        if (!onProgress || !payload) return;
+        try {
+            onProgress({ storeNumber: String(storeNumber), ...payload });
+        } catch {
+            /* ignore UI errors */
+        }
+    };
+    const wrap = (platform) => (payload) => {
+        emit({
+            platform,
+            ...(payload && typeof payload === 'object' ? payload : { type: 'status', label: String(payload) }),
+        });
+    };
+
+    const portalDays = toPortalPlanDays(plan);
+    if (!portalDays.length) {
+        return {
+            mmx: mmx ? { ok: false, error: 'No active forecast days in plan' } : null,
+            lifelenz: lifelenz ? { ok: false, error: 'No active forecast days in plan' } : null,
+        };
+    }
+
+    if (shouldAbort()) {
+        return {
+            mmx: mmx ? { ok: false, error: 'Cancelled', cancelled: true } : null,
+            lifelenz: lifelenz ? { ok: false, error: 'Cancelled', cancelled: true } : null,
+        };
+    }
+
+    // Run both portals together so LifeLenz is not blocked behind a long MMX write.
+    const tasks = [];
     if (mmx) {
-        try {
-            const forecastScraper = require('../../mmx/src/forecast/forecastScraper');
-            if (typeof forecastScraper.writeForecastPlanToMmx === 'function') {
-                results.mmx = await forecastScraper.writeForecastPlanToMmx(storeNumber, activeDays);
-            } else if (typeof forecastScraper.submitForecastPlan === 'function') {
-                results.mmx = await forecastScraper.submitForecastPlan(storeNumber, activeDays);
-            } else {
-                results.mmx = { ok: true, planOnly: true, message: 'MMX submit stub — plan generated.' };
-            }
-        } catch (err) {
-            results.mmx = { ok: false, error: err.message || String(err) };
-        }
+        tasks.push(
+            submitMmxPlan(storeNumber, portalDays, { emit, wrap, shouldAbort })
+                .then((result) => ({ key: 'mmx', result }))
+                .catch((err) => {
+                    const error = err.message || String(err);
+                    emit({ type: 'store-error', platform: 'mmx', error });
+                    return { key: 'mmx', result: { ok: false, error } };
+                })
+        );
     }
-
     if (lifelenz) {
-        try {
-            const lifelenzScraper = require('../../lifelenz/src/lifelenzForecastScraper');
-            if (typeof lifelenzScraper.submitForecastPlan === 'function') {
-                results.lifelenz = await lifelenzScraper.submitForecastPlan(storeNumber, activeDays);
-            } else if (typeof lifelenzScraper.writeForecastToLifeLenz === 'function') {
-                results.lifelenz = await lifelenzScraper.writeForecastToLifeLenz(storeNumber, activeDays);
-            } else {
-                results.lifelenz = { ok: true, planOnly: true, message: 'LifeLenz submit stub — plan generated.' };
-            }
-        } catch (err) {
-            results.lifelenz = { ok: false, error: err.message || String(err) };
-        }
+        tasks.push(
+            submitLifelenzPlan(storeNumber, portalDays, { emit, wrap, shouldAbort })
+                .then((result) => ({ key: 'lifelenz', result }))
+                .catch((err) => {
+                    const error = err.message || String(err);
+                    emit({ type: 'store-error', platform: 'lifelenz', error });
+                    return { key: 'lifelenz', result: { ok: false, error } };
+                })
+        );
     }
 
+    const settled = await Promise.all(tasks);
+    const results = { mmx: null, lifelenz: null };
+    for (const row of settled) {
+        results[row.key] = row.result;
+    }
+    if (shouldAbort()) {
+        if (mmx && results.mmx?.ok !== false && !results.mmx?.cancelled) {
+            /* keep completed MMX result */
+        }
+        if (lifelenz && !results.lifelenz) {
+            results.lifelenz = { ok: false, error: 'Cancelled', cancelled: true };
+        } else if (lifelenz && results.lifelenz?.ok && shouldAbort()) {
+            /* finished before cancel */
+        }
+    }
     return results;
 }
 
@@ -205,13 +404,41 @@ async function runForecastForStore(storeNumber, options = {}) {
     const weeks = Math.max(1, Math.min(5, Number(options.weeks || SUBMIT_WEEKS) || SUBMIT_WEEKS));
     const runId = `${storeNumber}-${Date.now()}`;
     const cfg = readConfig();
-    const { dates, weekKeys } = datesForWeeks(weeks);
+    const { dates: submitDates, weekKeys, tomorrow } = submitDatesForWeeks(weeks);
+    const shouldAbort =
+        typeof options.shouldAbort === 'function' ? options.shouldAbort : () => false;
+    const onProgress = typeof options.onProgress === 'function' ? options.onProgress : null;
+
+    if (shouldAbort()) {
+        return writeStatus(runId, {
+            storeNumber,
+            ok: false,
+            state: 'error',
+            message: 'Cancelled',
+            cancelled: true,
+        });
+    }
+
+    const targetDates = options.targetDates || submitDates;
+    if (!targetDates.length) {
+        return writeStatus(runId, {
+            storeNumber,
+            ok: false,
+            state: 'error',
+            message: `No remaining days to submit (writes start from tomorrow ${tomorrow}).`,
+        });
+    }
 
     writeStatus(runId, { storeNumber, state: 'planning', message: 'Building plan' });
+    onProgress?.({
+        type: 'status',
+        label: `Building plan for store ${storeNumber} (${targetDates.length} day(s) from ${targetDates[0]})…`,
+        storeNumber,
+    });
 
     const plan = buildPlan({
         storeNumber,
-        targetDates: options.targetDates || dates,
+        targetDates,
         adjustments: cfg.adjustments,
         protectedDates: cfg.protectedDates,
         historyDays: options.historyDays,
@@ -227,21 +454,65 @@ async function runForecastForStore(storeNumber, options = {}) {
         });
     }
 
-    const submit = await submitPlanToPortals(storeNumber, plan, {
-        mmx: options.mmx !== false,
-        lifelenz: options.lifelenz !== false,
+    if (shouldAbort()) {
+        return writeStatus(runId, {
+            storeNumber,
+            ok: false,
+            state: 'error',
+            message: 'Cancelled',
+            cancelled: true,
+            plan,
+        });
+    }
+
+    const wantMmx = options.mmx !== false;
+    const wantLifelenz = options.lifelenz !== false;
+    writeStatus(runId, {
+        storeNumber,
+        state: 'submitting',
+        message:
+            wantMmx && wantLifelenz
+                ? 'Submitting to MMX + LifeLenz (in parallel)'
+                : wantMmx
+                  ? 'Submitting to MMX'
+                  : 'Submitting to LifeLenz',
+        plan,
+    });
+    onProgress?.({
+        type: 'status',
+        label:
+            wantMmx && wantLifelenz
+                ? `Submitting store ${storeNumber} to MMX and LifeLenz together…`
+                : `Submitting store ${storeNumber}…`,
+        storeNumber,
     });
 
-    const ok =
-        (submit.mmx?.ok !== false || submit.mmx?.planOnly) &&
-        (submit.lifelenz?.ok !== false || submit.lifelenz?.planOnly);
+    const submit = await submitPlanToPortals(storeNumber, plan, {
+        mmx: wantMmx,
+        lifelenz: wantLifelenz,
+        onProgress,
+        shouldAbort,
+    });
+
+    const cancelled = Boolean(submit.mmx?.cancelled || submit.lifelenz?.cancelled || shouldAbort());
+    const ok = !cancelled && portalResultOk(submit.mmx) && portalResultOk(submit.lifelenz);
+    const errorParts = [
+        portalErrorText(submit.mmx, 'MMX'),
+        portalErrorText(submit.lifelenz, 'LifeLenz'),
+    ].filter(Boolean);
 
     if (ok) markWeeksSubmitted(storeNumber, weekKeys);
 
     return writeStatus(runId, {
         storeNumber,
+        ok,
         state: ok ? 'done' : 'error',
-        message: ok ? 'Forecast run finished' : 'Forecast run finished with errors',
+        cancelled,
+        message: cancelled
+            ? 'Cancelled'
+            : ok
+              ? 'Forecast run finished'
+              : errorParts.join(' · ') || 'Forecast run finished with errors',
         plan,
         submit,
     });
@@ -249,7 +520,19 @@ async function runForecastForStore(storeNumber, options = {}) {
 
 async function runForecastForStores(storeNumbers, options = {}) {
     const results = [];
+    const shouldAbort =
+        typeof options.shouldAbort === 'function' ? options.shouldAbort : () => false;
     for (const store of storeNumbers) {
+        if (shouldAbort()) {
+            results.push({
+                storeNumber: String(store),
+                ok: false,
+                state: 'error',
+                cancelled: true,
+                message: 'Cancelled',
+            });
+            continue;
+        }
         results.push(await runForecastForStore(store, options));
     }
     return results;
@@ -258,24 +541,33 @@ async function runForecastForStores(storeNumbers, options = {}) {
 const BACKFILL_DAYS = 35; // always 5 weeks
 const SUBMIT_WEEKS = 3;
 
-async function backfillHistoryFromMmx(storeNumber, days = BACKFILL_DAYS) {
+async function backfillHistoryFromMmx(storeNumber, days = BACKFILL_DAYS, options = {}) {
     const daysBack = Math.max(7, Number(days) || BACKFILL_DAYS);
+    const onLog = typeof options.onLog === 'function' ? options.onLog : null;
     const logs = [];
+    const emit = (message) => {
+        const line = String(message || '').trim();
+        if (!line) return;
+        logs.push(line);
+        onLog?.(line);
+    };
     try {
         const forecastScraper = require('../../mmx/src/forecast/forecastScraper');
         if (typeof forecastScraper.backfillStoreHistoryFromMmx !== 'function') {
+            emit('ERROR: backfill function missing on forecast scraper.');
             return {
                 ok: false,
                 storeNumber: String(storeNumber),
                 error: 'backfillStoreHistoryFromMmx not available on forecast scraper.',
-                logs: ['ERROR: backfill function missing on forecast scraper.'],
+                logs,
             };
         }
         const result = await forecastScraper.backfillStoreHistoryFromMmx(storeNumber, {
             days: daysBack,
             daysBack,
             onProgress: (ev) => {
-                if (ev?.message) logs.push(String(ev.message));
+                // Scraper already stores lines in result.logs; only stream live here.
+                if (ev?.message) onLog?.(String(ev.message));
             },
         });
         // Ensure days land in the greenfield history store used by planEngine
@@ -287,8 +579,11 @@ async function backfillHistoryFromMmx(storeNumber, days = BACKFILL_DAYS) {
             }
         }
         const localDays = recentDays(storeNumber, daysBack).length;
-        const mergedLogs = [...(result.logs || []), ...logs];
+        const mergedLogs = [...(result.logs || [])];
         if (result.ok === false) {
+            if (!mergedLogs.length) {
+                emit(`Store ${storeNumber}: backfill failed - ${result.error || 'unknown error'}`);
+            }
             return {
                 ok: false,
                 storeNumber: String(storeNumber),
@@ -296,14 +591,12 @@ async function backfillHistoryFromMmx(storeNumber, days = BACKFILL_DAYS) {
                 localDays,
                 daysBack,
                 error: result.error || 'Backfill failed',
-                logs: mergedLogs.length
-                    ? mergedLogs
-                    : [`Store ${storeNumber}: backfill failed - ${result.error || 'unknown error'}`],
+                logs: mergedLogs.length ? mergedLogs : logs,
             };
         }
-        mergedLogs.push(
-            `Store ${storeNumber}: backfill finished - imported ${result.imported || 0} day(s), history now ${localDays} day(s).`
-        );
+        const summary = `Store ${storeNumber}: history check - ${localDays} day(s) on disk after import of ${result.imported || 0}.`;
+        mergedLogs.push(summary);
+        onLog?.(summary);
         return {
             ok: true,
             storeNumber: String(storeNumber),
@@ -314,15 +607,15 @@ async function backfillHistoryFromMmx(storeNumber, days = BACKFILL_DAYS) {
         };
     } catch (err) {
         const message = err.message || String(err);
-        logs.push(`Store ${storeNumber}: ERROR - ${message}`);
+        emit(`Store ${storeNumber}: ERROR - ${message}`);
         return { ok: false, storeNumber: String(storeNumber), error: message, logs, daysBack };
     }
 }
 
-async function backfillStores(storeNumbers, days = BACKFILL_DAYS) {
+async function backfillStores(storeNumbers, days = BACKFILL_DAYS, options = {}) {
     const results = [];
     for (const store of storeNumbers) {
-        results.push(await backfillHistoryFromMmx(store, days));
+        results.push(await backfillHistoryFromMmx(store, days, options));
     }
     return results;
 }
@@ -337,6 +630,8 @@ module.exports = {
     listRecentRuns,
     buildPlan,
     weekTotalsForStore,
+    datesForWeeks,
+    submitDatesForWeeks,
     BACKFILL_DAYS,
     SUBMIT_WEEKS,
 };

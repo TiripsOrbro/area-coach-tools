@@ -2,10 +2,16 @@ const fs = require('fs');
 const path = require('path');
 
 const paths = require('../../../src/paths');
-const { writeJsonAtomic } = require('../forecast/atomicJson');
 
 const STATE_FILE = path.join(paths.dashboard.data, 'daily-reports-run-state.json');
 const TIME_ZONE = String(process.env.DASHBOARD_TIME_ZONE || 'Australia/Melbourne').trim();
+
+function writeJsonAtomic(filePath, value) {
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    const tmp = `${filePath}.${process.pid}.tmp`;
+    fs.writeFileSync(tmp, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+    fs.renameSync(tmp, filePath);
+}
 
 function melbourneDateKey(date = new Date()) {
     return new Intl.DateTimeFormat('en-CA', { timeZone: TIME_ZONE }).format(

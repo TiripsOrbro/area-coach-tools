@@ -1,0 +1,58 @@
+{
+  "_comment": "Excel tabs + Macromatix scheduled-order rows. orderClass matches Class (DRY/FRG/FRZ). Without --vendor, npm run orders-test processes every Create/Process row top-to-bottom, returning to the list after each Update.",
+  "scheduledOrdersUrl": "https://tacobellau.macromatix.net/mms_stores_scheduledorders.aspx",
+  "scheduledOrdersDate": "tomorrow",
+  "excel": {
+    "itemCodeColumn": "L",
+    "quantityColumn": "K",
+    "dataStartRow": 6,
+    "minQuantity": 0.001
+  },
+  "vendors": [
+    {
+      "id": "americold-dry",
+      "label": "Americold Vic DRY",
+      "vendorMatch": "americold",
+      "orderClass": "DRY",
+      "excelSheets": ["DRY"]
+    },
+    {
+      "id": "americold-frg",
+      "label": "Americold Vic FRG",
+      "vendorMatch": "americold",
+      "orderClass": "FRG",
+      "excelSheets": ["FRIDGE & FREEZER"]
+    },
+    {
+      "id": "americold-frz",
+      "label": "Americold Vic FRZ",
+      "vendorMatch": "americold",
+      "orderClass": "FRZ",
+      "excelSheets": ["FRIDGE & FREEZER"]
+    },
+    {
+      "id": "bega",
+      "label": "BEGA",
+      "vendorMatch": "bega",
+      "excelSheets": ["BEGA"]
+    },
+    {
+      "id": "schweppes",
+      "label": "Schweppes VIC",
+      "vendorMatch": "schweppes",
+      "excelSheets": ["SCHWEPPES"]
+    },
+    {
+      "id": "cutfresh",
+      "label": "Cut Fresh NSW",
+      "vendorMatch": "cut\\s*fresh",
+      "excelSheets": ["CUTFRESH"]
+    }
+  ],
+  "orderEntry": {
+    "clearQuantitiesButtonText": "Clear Quantities",
+    "clearQuantitiesConfirmIncludes": "set to zero",
+    "updateButtonText": "Update",
+    "forbiddenSubmitTexts": ["Submit", "Place Order", "Send", "Confirm", "Save"]
+  }
+}

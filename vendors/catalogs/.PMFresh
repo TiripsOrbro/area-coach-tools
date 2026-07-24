@@ -1,0 +1,9 @@
+# Vendor stock-count catalog — copy to `vendors/.CutFresh`
+#
+# vendor: PM Fresh
+# location-order: Fridge | Dry | Carryover | In Use
+
+10+2 | SLETT | LETTUCE SHREDDED 4X2KG | Crates | Bags | N/a | Fridge | In Use
+10 | DTOM4 | TOMATO DICED 4X1KG | Crates | KGs | N/a | Fridge | In Use
+10 | DO4 | ONION BROWN DICED 4X1KG | Bags | KGs | N/a | Fridge
+10 | CHOPC | TB SALAD CORIANDER CHOPPED 1X500GM | Bags | KGs | N/a | Fridge

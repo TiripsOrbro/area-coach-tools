@@ -1,0 +1,83 @@
+# Vendor stock-count catalog — copy to `vendors/.Americold`
+#
+# vendor: Americold
+# location-order: Freezer | Fridge | Dry | Carryover | In Use
+#
+# Append | In Use when the item is also on the MMX IN USE - THAW tab.
+
+# --- Freezer ---
+13 | 40109 | FRIES SUPERCRISP 6X2KG | Boxes | Bags | Each | Freezer | In Use
+10 | 37597 | TB CHURROS MINI 72EA | Boxes | Bags | Each | Freezer | In Use
+13 | 39520 | TB MEAT BEEF COOKED 8X1.85KG | Boxes | Bags | KGs | Freezer | Fridge | Carryover | In Use | 8
+10 | 39867A | TB MEAT CHICKEN COOKED 10X600G | Boxes | Bags | KGs | Freezer | Carryover | In Use | 10
+10 | 40303 | TB CHICKEN CRISPY 6X41EA | Boxes | Bags | Each | Freezer | In Use | 6
+13 | 37925 | TB TORTILLA FLOUR 12INCH 12x12EA | Boxes | Bags | Each | Freezer | In Use
+13 | 37923 | TB TORTILLA FLOUR 10.25INCH 12x12EA | Boxes | Bags | Each | Freezer | In Use
+13 | 37927 | TB TORTILLA FLOUR 6.5INCH 24x12EA | Boxes | Bags | Each | Freezer | In Use
+10 | 37928 | TB FLATBREAD 12x12EA | Boxes | Bags | Each | Freezer | In Use
+13 | 37891 | TB TORTILLA CORN 6 INCH 12X36EA | Boxes | Bags | Each | Freezer | Fridge | In Use | 12
+10 | 38240 | TB BEANS BLACK COOKED 12X1KG | Boxes | Bags | Each | Freezer | In Use
+10 | 14701 | GUACAMOLE 6x1.5KG | Boxes | Bags | Each | Freezer | Fridge | In Use
+
+# --- Fridge ---
+10 | 39009 | TB CHIP NACHO 4.5KG | Boxes | Bags | Each | Fridge | In Use
+10 | 100457 | SAUCE FIRE 10X1KG | Boxes | Bags | Each | Fridge | In Use
+10 | 37870 | TB SAUCE CHILLI MILD 10X1KG | Boxes | Bags | Each | Fridge | In Use
+10 | 38414 | TB SAUCE ZESTY RANCH 15X1KG | Boxes | Bags | Each | Fridge | In Use
+10 | 38493 | TB SAUCE CHIPOTLE MAYO 15X1KG | Boxes | Bags | Each | Fridge | In Use
+10 | 38722 | TB SAUCE CREAMY JALAPENO 10X1KG | Boxes | Bags | Each | Fridge | In Use
+10 | 38701 | TB LAVA SAUCE 10X1KG | Boxes | Bags | Each | Fridge | In Use
+10 | 37876 | TB CHEESE 4 BLEND 6X2KG | Boxes | Bags | Each | Fridge | In Use
+10 | 37911 | TB CHEESE CHEDD ANGEL HAIR/SFINE SHRED 6x2KG | Boxes | Bags | Each | Fridge | In Use
+10 | 37909 | TB SAUCE NACHO CHEESE 6X1.5KG | Boxes | Bags | Each | Fridge | Carryover | In Use
+10 | 38088 | DESSERT CHOCETTES 2X2.5KG | Boxes | Bags | Each | Fridge | In Use
+10 | 40003 | TB JALAPENO 6X2.3KG | Boxes | Bags | Each | Fridge | In Use
+10 | 37013 | TB SAUCE PICO DE GALLO 12X500GM | Boxes | Bags | Each | Fridge
+
+# --- Dry (MMX DRY tab) — stock count: gloves, rice, seasoning, sugar, cinnamon twists, paper/toilet rolls, multipurpose bags; SCM sauces/oil oh:; packaging skip: ---
+oh:10 | 17005 | SAUCE TOMATO SQUEEZE 100x14GM | Boxes | Bags | Each | Dry
+oh:10 | 38163 | TB SAUCE CHOCOLATE DA VINCI 2X2LTR | Boxes | Bags | Each | Dry
+oh:10 | 106191 | SAUCE CARAMEL MONIN 1.8L | Boxes | Bags | Each | Dry
+10 | 40037 | SUGAR CINNAMON 5X2.5KG | Boxes | Bags | Each | Dry
+10 | 40062A | TR CINNAMON TWISTS 2 X 5KG | Boxes | Bags | Each | Dry
+10 | 37914 | RICE LONG GRAIN WHITE 10KG | Boxes | Bags | Each | Dry
+10 | 37915 | TD RICE LONG GRAIN WHITE 10KG | Boxes | Bags | Each | Dry
+10 | 39054 | TR SEASONING MEXICAN RECI 10X1 | Boxes | Bags | Each | Dry
+oh:10 | 607826 | OIL FRYING LIQUID 15KG | Boxes | Bags | Each | Dry
+skip | 33090 | TD CUP POSTMIX REGULAR 1000EA NEW | Boxes | N/a | Each | Dry
+skip | 33091 | TB CUP POSTMIX LARGE 20X50EA NEW | Boxes | N/a | Each | Dry | 20
+skip | TB13735 | LIDS CUP POST MIX 400/500ML 2000EA | Boxes | N/a | Each | Dry
+skip | 33094 | TB LID POSTMIX 20X50EA | Boxes | N/a | Each | Dry | 20
+skip | 601518 | STRAW PAPER CFC 4000EA | Boxes | N/a | Each | Dry
+skip | 505798 | TRAYS DRINKS 4 CUP 100EA | Boxes | N/a | Each | Dry
+skip | 601078 | CUP SEMI FOR 1000PK | Boxes | N/a | Each | Dry
+skip | 507017 | LID FCS DOME 500 ML | Boxes | N/a | Each | Dry
+skip | 37987 | TR BAG TAKEAWAY BROWN SMALL 1000EA | Boxes | N/a | Each | Dry
+skip | 37989 | TB BAG TAKEAWAY BROWN MEDIUM 1000EA | Boxes | N/a | Each | Dry
+skip | 37991 | TD BAG TAKEAWAY BROWN LARGE 250EA | Boxes | N/a | Each | Dry
+skip | 30044 | TB BAG CHIP REGULAR 3000EA | Boxes | N/a | Each | Dry
+skip | 30044A | TD BAG CHIPS LARGE / NACHO CHIPS REGULAR | Boxes | N/a | Each | Dry
+skip | 30045 | TR BAG NACHO CHIP LARGE 2000EA | Boxes | N/a | Each | Dry
+skip | 30042 | TB BAG CRUNCHWRAP 2000EA | Boxes | N/a | Each | Dry
+skip | 40014 | TD BOX CANTINA 200EA | Boxes | N/a | Each | Dry
+skip | 30052 | TB BIG BELL BOX 200EA | Boxes | N/a | Each | Dry
+skip | 30744 | TD DIPPING CUP 60ML 1000EA | Boxes | N/a | Each | Dry
+skip | 30740 | TR LID CLEAR SEMI DIPPING CUP 1000EA | Boxes | N/a | Each | Dry
+skip | 37921 | TD WRAP SMALL WHITE PRINTED 3000EA | Boxes | N/a | Each | Dry
+skip | 37901 | TR WRAP LARGE WHITE PRINTED 2000EA | Boxes | N/a | Each | Dry
+skip | 33059 | TB WRAP WASTE WHITE UNPRINTED 3X1000EA | Boxes | N/a | Each | Dry
+skip | 33050 | NAPKINS BROWN RECYCLE | Boxes | N/a | Each | Dry
+skip | 30041 | TR WOODEN FORK 1000EA | Boxes | N/a | Each | Dry
+order=2 | 100481 | GLOVE NITRILE MEDIUM 10X100 | Cartons | Packs | N/a | Dry | 10
+order=2 | 100482 | GLOVE NITRILE LARGE10X100 | Cartons | Packs | N/a | Dry | 10
+order=2 | 100483 | GLOVE NITRILE XLARGE 10X100 | Cartons | Packs | N/a | Dry | 10
+order=1 | 38076 | TOWEL PAPER HAND TORK WHITE 6 ROLLS | Cartons | Rolls | N/a | Dry | 6
+order=1 | 38078 | TOILET PAPER SMARTONE 12 ROLLS | Cartons | Rolls | N/a | Dry | 12
+skip | 38464 | FILTER SHEET EVOLUTION LOADED 100EA | Cartons | N/a | N/a | Dry
+skip | 38542 | BIN LINER 240L H/DUTY 8X25 EA | Cartons | N/a | N/a | Dry
+skip | 504245 | SCOURERS SMALL GREEN MAXPAC 30 | Cartons | Packs | N/a | Dry | 6
+skip | 504372 | WIPING CLOTH BLUE 350EA | Cartons | N/a | N/a | Dry
+skip | 505796 | WIPING CLOTH YELLOW | Cartons | N/a | N/a | Dry
+order=0.2 | 505253 | TB BAG MULTIPURPOSE 5000EA | Cartons | N/a | N/a | Dry
+
+# --- Carryover (MMX CARRY OVER tab) — partial pans: chicken, beef, nacho cheese (see Freezer/Fridge lines above) ---

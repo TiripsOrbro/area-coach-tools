@@ -2804,11 +2804,55 @@ html.mic-dark-mode .admin-buildto-close-btn:hover {
 
 .admin-forecast-history-toolbar {
     display: flex;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     gap: 0.75rem;
     margin: 0.5rem 0 0.35rem;
+}
+
+.admin-forecast-history-view-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    flex-shrink: 0;
+}
+
+.admin-forecast-history-view-btn.is-active,
+.admin-forecast-deep-dive-tab.is-active {
+    background: color-mix(in srgb, var(--tb-purple-light, #9b63d6) 22%, white);
+    border-color: color-mix(in srgb, var(--tb-purple-light, #9b63d6) 55%, #64748b);
+    font-weight: 600;
+}
+
+.admin-forecast-history-week-controls {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.65rem;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.admin-forecast-history-day-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.admin-forecast-history-week-controls[hidden],
+.admin-forecast-history-day-controls[hidden] {
+    display: none !important;
+}
+
+.admin-forecast-deep-dive-tabs {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem;
 }
 
 .admin-forecast-history-nav {
@@ -2817,6 +2861,92 @@ html.mic-dark-mode .admin-buildto-close-btn:hover {
     align-items: center;
     gap: 0.4rem;
     flex-shrink: 0;
+}
+
+.admin-forecast-deep-dive-grid-wrap {
+    margin-top: 0.25rem;
+}
+
+.admin-forecast-deep-dive-grid .admin-history-hour {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: #fff;
+}
+
+.admin-forecast-deep-dive-average {
+    font-weight: 600;
+    background: color-mix(in srgb, var(--tb-purple-light, #9b63d6) 10%, white);
+}
+
+.admin-forecast-outlier--low {
+    background: rgba(59, 130, 246, 0.18);
+    color: #1d4ed8;
+}
+
+.admin-forecast-outlier--high {
+    background: rgba(239, 68, 68, 0.16);
+    color: #b91c1c;
+}
+
+.admin-forecast-deep-dive-ignored,
+.admin-forecast-deep-dive-col--ignored {
+    opacity: 0.55;
+    background: rgba(148, 163, 184, 0.12);
+}
+
+.admin-forecast-deep-dive-missing {
+    color: rgba(0, 0, 0, 0.35);
+}
+
+.admin-forecast-deep-dive-legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem 0.75rem;
+    margin: 0.65rem 0 0;
+    font-size: 0.78rem;
+    color: rgba(0, 0, 0, 0.65);
+}
+
+.admin-forecast-outlier-swatch {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.1rem 0.4rem;
+    border-radius: 0.25rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+
+html.mic-dark-mode .admin-forecast-history-view-btn.is-active,
+html.mic-dark-mode .admin-forecast-deep-dive-tab.is-active {
+    background: color-mix(in srgb, var(--tb-purple-light, #9b63d6) 28%, #1e1e24);
+}
+
+html.mic-dark-mode .admin-forecast-deep-dive-grid .admin-history-hour {
+    background: #1e1e24;
+}
+
+html.mic-dark-mode .admin-forecast-deep-dive-average {
+    background: color-mix(in srgb, var(--tb-purple-light, #9b63d6) 18%, #1e1e24);
+}
+
+html.mic-dark-mode .admin-forecast-outlier--low {
+    background: rgba(96, 165, 250, 0.22);
+    color: #93c5fd;
+}
+
+html.mic-dark-mode .admin-forecast-outlier--high {
+    background: rgba(248, 113, 113, 0.22);
+    color: #fca5a5;
+}
+
+html.mic-dark-mode .admin-forecast-deep-dive-legend {
+    color: rgba(255, 255, 255, 0.65);
+}
+
+html.mic-dark-mode .admin-forecast-deep-dive-missing {
+    color: rgba(255, 255, 255, 0.35);
 }
 
 .admin-forecast-history-nav .mic-settings-btn {

@@ -3,6 +3,8 @@ const {
     createAuthenticatedLifeLenzSession,
     parseStoreLabel,
     dedupeStores,
+    selectLifeLenzArea,
+    resolveLifeLenzArea,
 } = require('./lifelenzAuth');
 const { aggregateDayPartsFromHourlyPlan, LIFELENZ_DAY_PARTS } = require('./lifelenzDayParts');
 const { pasteIntoInput } = require('./lifelenzInput');
@@ -133,12 +135,32 @@ async function waitForDropdownOptions(page, options = {}, timeoutMs = STORE_PICK
                     document.querySelector('[role="listbox"]') ||
                     document.querySelector('[role="menu"]') ||
                     document.querySelector('[data-radix-popper-content-wrapper]');
-                if (!container) return false;
-                const r = container.getBoundingClientRect();
-                if (r.width <= 0 || r.height <= 0) return false;
-                return Boolean(
-                    container.querySelector('[role="option"], [role="menuitem"], li, button, a')
-                );
+                if (container) {
+                    const r = container.getBoundingClientRect();
+                    if (
+                        r.width > 0 &&
+                        r.height > 0 &&
+                        container.querySelector('[role="option"], [role="menuitem"], li, button, a')
+                    ) {
+                        return true;
+                    }
+                }
+                // Hierarchical location picker (Area → stores): search + area codes / store rows.
+                for (const input of document.querySelectorAll('input')) {
+                    const ph = String(input.getAttribute('placeholder') || '');
+                    if (/search by name or code/i.test(ph)) {
+                        const r = input.getBoundingClientRect();
+                        if (r.width > 0 && r.height > 0) return true;
+                    }
+                }
+                for (const el of document.querySelectorAll('button, a, [role="treeitem"], li, div, span')) {
+                    const text = (el.textContent || '').replace(/\s+/g, ' ').trim();
+                    const r = el.getBoundingClientRect();
+                    if (r.width <= 0 || r.height <= 0) continue;
+                    if (/^T\d{2}$/i.test(text)) return true;
+                    if (/^\d{4}\s*-\s*\S/.test(text) && text.length < 120) return true;
+                }
+                return false;
             }),
         { timeoutMs, pollMs: resolvePollMs(options), label: 'store dropdown options' }
     );
@@ -427,7 +449,17 @@ async function selectStoreInLifeLenz(page, storeNumber, options = {}) {
 
             await safeClickHandle(page, trigger);
             if (!(await waitForDropdownOptions(page, options))) {
-                throw new Error(`Store dropdown did not open for store ${store}.`);
+                // Area-first pickers may open with T01/T22 tree and no store rows yet.
+                await selectLifeLenzArea(page, resolveLifeLenzArea(options.lifelenzArea), {
+                    required: false,
+                }).catch(() => false);
+                if (!(await waitForDropdownOptions(page, options))) {
+                    throw new Error(`Store dropdown did not open for store ${store}.`);
+                }
+            } else {
+                await selectLifeLenzArea(page, resolveLifeLenzArea(options.lifelenzArea), {
+                    required: false,
+                }).catch(() => false);
             }
 
             if (!(await pickStoreOptionFromOpenDropdown(page, store, options))) {
@@ -1380,7 +1412,13 @@ async function fillDayPartsWithOvernightQuirk(page, dayParts, options = {}) {
 }
 
 async function writeForecastDay(page, isoDate, planDay, options = {}) {
-    emitProgress(options, { type: 'day-start', date: isoDate, forecastTotal: planDay.forecastTotal });
+    emitProgress(options, {
+        type: 'day-start',
+        date: isoDate,
+        forecastTotal: planDay.forecastTotal,
+        weekday: planDay.weekday,
+        hourly: planDay.hourly,
+    });
     const dayParts = aggregateDayPartsFromHourlyPlan(planDay);
     const runOptions = { ...options, activeDate: isoDate };
 
@@ -1503,6 +1541,20 @@ async function writeForecastPlanOnPage(page, storeNumber, plan, accessibleStores
     return applied;
 }
 
+function clarifyLifeLenzWaitError(err) {
+    const msg = String(err?.message || err || '');
+    if (/Waiting failed:\s*60000ms exceeded/i.test(msg)) {
+        return new Error(
+            'LifeLenz login timed out after 60s (did not reach Business Explorer / store shell). Check credentials, or try again if Macromatix was also busy.'
+        );
+    }
+    if (/Waiting failed:\s*(\d+)ms exceeded/i.test(msg)) {
+        const ms = RegExp.$1;
+        return new Error(`LifeLenz timed out after ${Math.round(Number(ms) / 1000)}s: ${msg}`);
+    }
+    return err instanceof Error ? err : new Error(msg);
+}
+
 async function writeForecastPlanToLifeLenz(storeNumber, plan, credentials, options = {}) {
     const email = String(credentials?.email || credentials?.lifelenzEmail || '').trim();
     const password = String(credentials?.password || credentials?.lifelenzPassword || '');
@@ -1515,11 +1567,20 @@ async function writeForecastPlanToLifeLenz(storeNumber, plan, credentials, optio
     let ownsSession = false;
 
     if (!page) {
-        const session = await createAuthenticatedLifeLenzSession(email, password, options);
-        browser = session.browser;
-        page = session.page;
-        options.accessibleStores = session.stores;
-        ownsSession = true;
+        emitProgress(options, { type: 'session-start', label: 'Signing in to LifeLenz…' });
+        try {
+            const session = await createAuthenticatedLifeLenzSession(email, password, options);
+            browser = session.browser;
+            page = session.page;
+            options.accessibleStores = session.stores;
+            ownsSession = true;
+            emitProgress(options, {
+                type: 'status',
+                label: `LifeLenz signed in (${(session.stores || []).length} store(s) visible)`,
+            });
+        } catch (err) {
+            throw clarifyLifeLenzWaitError(err);
+        }
     }
 
     try {

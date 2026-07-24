@@ -1,4 +1,4 @@
-﻿const { TIME_ZONE } = require('./upselling/upsellingConfig');
+const TIME_ZONE = String(process.env.DASHBOARD_TIME_ZONE || 'Australia/Melbourne').trim();
 
 /** Macromatix hourly arrays: index 0 = 5AM local. */
 const RAW_BASE_HOUR = 5;

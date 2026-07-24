@@ -1,4 +1,4 @@
-﻿const crypto = require('crypto');
+const crypto = require('crypto');
 const fs = require('fs');
 const puppeteer = require('../../src/puppeteerCompat');
 const {
@@ -1134,9 +1134,13 @@ async function resolveStoreOnCurrentPage(page, storeNumber, options = {}) {
 
     await page.waitForTimeout(Number(options.waitMs ?? 800));
     let picked = await selectStoreOnPage(page, num);
-    if (!picked && storeLabel && storeLabel !== num) {
+    if (!picked && storeLabel && storeLabel !== num && !options.skipTree) {
         const { selectStore: selectStoreByLabel } = require('./mmxReports/pipeline-supply-chain-reports');
-        await selectStoreByLabel(page, storeLabel, { storeNumber: num, waitMs: 500 });
+        await selectStoreByLabel(page, storeLabel, {
+            storeNumber: num,
+            waitMs: 500,
+            skipTree: true,
+        });
         picked = await selectStoreOnPage(page, num);
     }
     if (!picked && !options.requireComboSelection) {
@@ -1528,30 +1532,84 @@ async function scrapeRecentHistoricalDaysByStepping(page, daysBack, options = {}
  * Navigate to specific missing dates by stepping back from the current day view,
  * using week/day dropdowns when stepping crosses a week boundary (View Week aggregate).
  */
+function weekdayShortForIso(iso, timeZone) {
+    try {
+        return new Intl.DateTimeFormat('en-AU', {
+            timeZone: timeZone || 'Australia/Melbourne',
+            weekday: 'short',
+        }).format(new Date(`${iso}T12:00:00`));
+    } catch {
+        return '';
+    }
+}
+
+function summarizeHourlyActual(actual) {
+    const values = Array.isArray(actual) ? actual.map((v) => Number(v) || 0) : [];
+    let total = 0;
+    let hoursWithSales = 0;
+    let peak = 0;
+    let peakHour = -1;
+    for (let i = 0; i < values.length; i += 1) {
+        const v = values[i];
+        total += v;
+        if (v > 0) hoursWithSales += 1;
+        if (v > peak) {
+            peak = v;
+            peakHour = i;
+        }
+    }
+    return {
+        total: Math.round(total * 100) / 100,
+        hoursWithSales,
+        hourSlots: values.length,
+        peak: Math.round(peak * 100) / 100,
+        peakHour,
+    };
+}
+
 async function scrapeMissingHistoricalDays(page, dateIsos, options = {}) {
     const timeZone = options.timeZone || process.env.DASHBOARD_TIME_ZONE || 'Australia/Melbourne';
     const onProgress = typeof options.onProgress === 'function' ? options.onProgress : null;
     const targets = [...new Set(dateIsos.map((d) => String(d || '').trim()).filter(Boolean))].sort().reverse();
     if (!targets.length) return [];
 
+    const newest = targets[0];
+    const oldest = targets[targets.length - 1];
     onProgress?.({
         type: 'day-batch-start',
         count: targets.length,
-        message: `Scraping ${targets.length} day(s) from labour scheduler...`,
+        message: `Labour scheduler day scrape: ${targets.length} day(s) from ${oldest} back through ${newest}.`,
     });
 
+    onProgress?.({
+        type: 'day-view-open',
+        message: 'Opening labour Day view and reading current schedule context...',
+    });
     await openDayViewAndReadSales(page, false);
     let context = await readLabourSchedulerDayContext(page);
     let currentIso = parseDdMmYyyyFragmentToIso(context.dayText);
+    onProgress?.({
+        type: 'day-view-ready',
+        date: currentIso || '',
+        message: currentIso
+            ? `Day view ready (currently on ${currentIso}${context.dayText ? ` / "${context.dayText}"` : ''}).`
+            : `Day view ready (label: "${context.dayText || 'unknown'}").`,
+    });
     const results = [];
 
-    for (const targetIso of targets) {
+    for (let index = 0; index < targets.length; index += 1) {
+        const targetIso = targets[index];
+        const weekday = weekdayShortForIso(targetIso, timeZone);
+        const progress = `${index + 1}/${targets.length}`;
         onProgress?.({
             type: 'day-start',
             date: targetIso,
-            message: `Navigating to ${targetIso}...`,
+            index: index + 1,
+            count: targets.length,
+            message: `[${progress}] ${targetIso} (${weekday || '?'}) - navigating...`,
         });
         let guard = 0;
+        let usedCalendarJump = false;
         while (currentIso && currentIso > targetIso && guard < 400) {
             await stepLabourSchedulerDay(page, -1);
             context = await readLabourSchedulerDayContext(page);
@@ -1562,20 +1620,43 @@ async function scrapeMissingHistoricalDays(page, dateIsos, options = {}) {
             guard += 1;
         }
         if (!dayComboLabelMatchesIso(context?.dayText, targetIso, timeZone)) {
+            usedCalendarJump = true;
+            onProgress?.({
+                type: 'day-jump',
+                date: targetIso,
+                message: `[${progress}] ${targetIso}: calendar jump (step-back landed on "${context?.dayText || currentIso || '?'}").`,
+            });
             context = await navigateLabourSchedulerToDate(page, targetIso, timeZone);
             currentIso = parseDdMmYyyyFragmentToIso(context.dayText);
+        } else if (guard > 0) {
+            onProgress?.({
+                type: 'day-step',
+                date: targetIso,
+                steps: guard,
+                message: `[${progress}] ${targetIso}: stepped back ${guard} day(s).`,
+            });
         }
         const sales = await readDayViewSalesOnly(page, false, { timeout: 20000, softFail: true });
-        const total = (sales.actual || []).reduce((sum, v) => sum + (Number(v) || 0), 0);
+        const summary = summarizeHourlyActual(sales.actual);
+        let message;
+        if (summary.total > 0) {
+            const peakBit =
+                summary.peakHour >= 0
+                    ? `, peak $${summary.peak} at hour index ${summary.peakHour}`
+                    : '';
+            message = `[${progress}] ${targetIso} (${weekday || '?'}): $${summary.total} across ${summary.hoursWithSales}/${summary.hourSlots || '?'} hour slots${peakBit}.`;
+        } else {
+            message = `[${progress}] ${targetIso} (${weekday || '?'}): empty / closed (no ActualSalesKpi values) - will skip import.`;
+        }
         onProgress?.({
             type: 'day-read',
             date: targetIso,
-            total: Math.round(total * 100) / 100,
+            total: summary.total,
+            hoursWithSales: summary.hoursWithSales,
             dayText: context.dayText || '',
-            message:
-                total > 0
-                    ? `${targetIso}: read $${Math.round(total * 100) / 100} sales.`
-                    : `${targetIso}: no sales row (store closed or empty).`,
+            usedCalendarJump,
+            steps: guard,
+            message,
         });
         results.push({ dateIso: targetIso, context, ...sales });
     }

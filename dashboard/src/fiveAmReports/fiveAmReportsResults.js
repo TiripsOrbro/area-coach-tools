@@ -2,10 +2,21 @@ const fs = require('fs');
 const path = require('path');
 
 const paths = require('../../../src/paths');
-const { reportDateKeyFromFilename } = require('../../../vendors/src/reportReader');
 
 const RESULTS_DIR = path.join(paths.dashboard.data, 'five-am-reports');
 const REPORTS_DIR = paths.vendors.reports;
+
+function reportDateKeyFromFilenameSafe(name) {
+    try {
+        const { reportDateKeyFromFilename } = require('../../../vendors/src/reportReader');
+        return reportDateKeyFromFilename(name);
+    } catch {
+        // Fallback if reportReader is unavailable in a partial install
+        const m = String(name || '').match(/(20\d{2})[-_]?(\d{2})[-_]?(\d{2})/);
+        if (!m) return null;
+        return `${m[1]}-${m[2]}-${m[3]}`;
+    }
+}
 
 function resultsFilePath(dateKey) {
     return path.join(RESULTS_DIR, `${String(dateKey || '').trim()}.json`);
@@ -77,7 +88,7 @@ function purgeOldReportFiles(storeNumber, keepDateKey) {
         } catch {
             continue;
         }
-        const day = reportDateKeyFromFilename(name);
+        const day = reportDateKeyFromFilenameSafe(name);
         // Only remove files we can date and that are from a previous day.
         if (!day || day === keep) continue;
         try {

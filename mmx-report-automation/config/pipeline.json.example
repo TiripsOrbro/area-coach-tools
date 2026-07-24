@@ -1,0 +1,49 @@
+{
+  "gate": {
+    "url": "https://tacobellau.macromatix.net/MMS_Stores_StockCount.aspx?MenuCustomItemID=156",
+    "readySelector": "table",
+    "countTypeText": "Key Item Count",
+    "appliedStatusText": "Applied",
+    "minCompleteCount": 1,
+    "evaluateComplete": null
+  },
+  "reportNavigation": {
+    "url": "https://tacobellau.macromatix.net/MMS_System_Reports.aspx?MenuCustomItemID=12",
+    "menuPath": ["Report Selection", "Supply Chain"],
+    "waitAfterNavigateMs": 2000
+  },
+  "reports": [
+    {
+      "id": "report1",
+      "label": "Stock On Hand",
+      "type": "supplyChain",
+      "group": "Supply Chain",
+      "reportName": "SCM - Items On Hand (Flat)",
+      "format": "Excel Data Only",
+      "exportLinkText": "Excel Data Only",
+      "downloadExt": ".xls",
+      "startDate": "tomorrow",
+      "timeZone": "Australia/Melbourne"
+    },
+    {
+      "id": "report2",
+      "label": "Stock On Order",
+      "type": "supplyChain",
+      "group": "Supply Chain",
+      "reportName": "SCM - Items On Order (Flat)",
+      "format": "Excel Data Only",
+      "exportLinkText": "Excel Data Only",
+      "downloadExt": ".xls",
+      "startDate": "daysAgo:7",
+      "endDate": "daysFromNow:21",
+      "dateOnly": true,
+      "timeZone": "Australia/Melbourne"
+    }
+  ],
+  "paste": {
+    "url": "https://tacobellau.macromatix.net/REPLACE_ENTRY_PAGE.aspx",
+    "readySelector": "form#aspnetForm",
+    "fields": [],
+    "submitSelector": "input[type='submit'][value='Save']"
+  }
+}
