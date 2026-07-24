@@ -1456,9 +1456,11 @@ async function fillForecastHourlyInputs(page, hourly, options = {}) {
 
         // Trading hours must use real Puppeteer clicks. Bulk DOM writes update the visible
         // cell text without updating Angular's model, so Save persists the old forecast.
+        // Do NOT use continuous:true here — skipping commit-wait drops mid-day hours (3/5/7/8pm).
         if (tradingPending.length) {
             await scrollForecastGridToTop(page);
             for (const slot of tradingPending) {
+                await scrollForecastHourIntoView(page, slot).catch(() => {});
                 emitSlotProgress(onProgress, {
                     type: 'hour-entering',
                     hour: slot.hour,
@@ -1468,16 +1470,19 @@ async function fillForecastHourlyInputs(page, hourly, options = {}) {
                 });
                 const result = await enterAndVerifyForecastSlot(page, slot, onProgress, {
                     cellCache,
-                    continuous: true,
+                    continuous: false,
                     force: true,
                     suppressFailureProgress: true,
                 });
                 if (!result?.ok) {
-                    bulkFailed.push({
-                        label: slot.label,
-                        hour: slot.hour,
-                        reason: result?.reason || 'puppeteer-mismatch',
-                    });
+                    const retry = await retryForecastSlotRedundant(page, slot, onProgress, cellCache);
+                    if (!retry?.ok) {
+                        bulkFailed.push({
+                            label: slot.label,
+                            hour: slot.hour,
+                            reason: result?.reason || retry?.reason || 'puppeteer-mismatch',
+                        });
+                    }
                 }
             }
             await dismissForecastOverrideEditor(page).catch(() => {});
