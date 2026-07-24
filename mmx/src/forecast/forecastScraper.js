@@ -1137,12 +1137,13 @@ function cacheForecastCellValue(cellCache, slotOrLabel, wanted, hour = null) {
 }
 
 async function enterAndVerifyForecastSlot(page, slot, onProgress, options = {}) {
-    const { retry = false, cellCache = null } = options;
+    const { retry = false, cellCache = null, force = false } = options;
     const preRead =
         cellCache && getCellCacheValue(cellCache, slot) !== undefined
             ? getCellCacheValue(cellCache, slot)
             : await readManagerForecastCell(page, slot.label, slot.hour);
-    if (forecastValuesMatch(preRead, slot.forecast)) {
+    // `force` is required to mark Angular dirty even when the displayed value already matches.
+    if (!force && !retry && forecastValuesMatch(preRead, slot.forecast)) {
         const read = parseForecastDollar(preRead);
         emitSlotProgress(onProgress, {
             type: 'hour-confirmed',
@@ -1658,8 +1659,21 @@ async function forceForecastFormDirty(page, hourly) {
     const slots = normalizeHourlySlots(hourly).filter((slot) => !slot.outsideHours);
     const slot = slots.find((row) => Math.round(Number(row.forecast) || 0) > 0) || slots[0];
     if (!slot) return false;
-    // Real Puppeteer clicks mark Angular dirty; bulk DOM writes often do not.
-    const result = await enterAndVerifyForecastSlot(page, slot, null, { suppressFailureProgress: true });
+    // Bulk DOM writes update cell text without Angular dirty. Re-type with real Puppeteer
+    // clicks (force:true) so Save appears — even when the displayed value already matches.
+    const wanted = Math.round(Number(slot.forecast) || 0);
+    const nudge = {
+        ...slot,
+        forecast: wanted === 0 ? 1 : wanted + 1,
+    };
+    await enterAndVerifyForecastSlot(page, nudge, null, {
+        force: true,
+        suppressFailureProgress: true,
+    });
+    const result = await enterAndVerifyForecastSlot(page, slot, null, {
+        force: true,
+        suppressFailureProgress: true,
+    });
     await dismissForecastOverrideEditor(page).catch(() => {});
     return Boolean(result?.ok);
 }
