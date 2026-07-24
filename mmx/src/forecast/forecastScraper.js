@@ -709,16 +709,14 @@ function commitTimeoutForValue(forecast, options = {}) {
 }
 
 async function dismissForecastOverrideEditor(page) {
-    // Do not press Escape — in Forecasting/Edit it can cancel pending manager overrides
-    // and clear the dirty flag so Save never appears.
+    // Never Escape (cancels overrides). Never click ForecastGridHeader either —
+    // that click can clear the Edit toolbar dirty state so Save never appears.
     await page.evaluate(() => {
         const inp = document.querySelector('#overrideInput');
         if (inp) {
             inp.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', bubbles: true }));
             inp.blur();
         }
-        const header = document.querySelector('#ForecastGridHeader, .mx-grid-header-container');
-        header?.click();
     });
     await waitForOverrideEditorClosed(page);
 }
@@ -855,7 +853,7 @@ async function waitForManagerForecastValue(page, wantLabel, forecast, timeoutMs 
     };
 }
 
-/** Commit a value into #overrideInput (Angular-aware) so MMX replaces existing manager values. */
+/** Commit a value into #overrideInput with real keyboard typing so Angular marks dirty. */
 async function writeForecastOverrideValue(page, value, options = {}) {
     const text = String(Math.round(Number(value) || 0));
     if (!options.skipWait) {
@@ -865,6 +863,18 @@ async function writeForecastOverrideValue(page, value, options = {}) {
         if (!ready) return false;
     } else if (!(await isOverrideEditorVisible(page))) {
         return false;
+    }
+
+    try {
+        const handle = await page.$(MANAGER_OVERRIDE_INPUT);
+        if (!handle) return false;
+        await handle.click({ clickCount: 3 });
+        await page.keyboard.press('Backspace').catch(() => {});
+        await page.keyboard.type(text, { delay: 5 });
+        await page.keyboard.press('Enter');
+        return true;
+    } catch {
+        /* fall through to synthetic write */
     }
 
     const ok = await page.evaluate(
@@ -1735,9 +1745,149 @@ async function clickForecastSaveViaNgClick(page) {
     });
 }
 
+async function invokeForecastSaveViaAngular(page) {
+    return page.evaluate(() => {
+        const angular = window.angular;
+        if (!angular || typeof angular.element !== 'function') {
+            return { ok: false, reason: 'no-angular' };
+        }
+
+        const callOnScope = (scope, name) => {
+            if (!scope) return false;
+            const parts = String(name).split('.');
+            let ctx = scope;
+            let fn = scope;
+            for (const part of parts) {
+                ctx = fn;
+                fn = fn && fn[part];
+            }
+            if (typeof fn !== 'function') return false;
+            try {
+                scope.$apply(() => fn.call(ctx));
+                return true;
+            } catch {
+                try {
+                    fn.call(ctx);
+                    if (typeof scope.$apply === 'function') scope.$apply();
+                    return true;
+                } catch {
+                    return false;
+                }
+            }
+        };
+
+        const CANDIDATES = [
+            'SaveChanges',
+            'saveChanges',
+            'Save',
+            'save',
+            'Vm.SaveChanges',
+            'vm.SaveChanges',
+            'Vm.Save',
+            'vm.Save',
+        ];
+
+        const saveEl = [...document.querySelectorAll('button, a.btn, [ng-click]')].find((el) => {
+            const r = el.getBoundingClientRect();
+            if (r.width <= 0 || r.height <= 0) return false;
+            const label = (el.textContent || el.value || '').replace(/\s+/g, ' ').trim();
+            const ng = el.getAttribute('ng-click') || '';
+            return /^save$/i.test(label) || /SaveChanges\s*\(/i.test(ng) || /saveChanges\s*\(/i.test(ng);
+        });
+        if (saveEl) {
+            const ng = saveEl.getAttribute('ng-click') || '';
+            const m = ng.match(/([A-Za-z_$][\w.$]*)\s*\(/);
+            const preferred = m ? m[1] : 'SaveChanges';
+            let scope = angular.element(saveEl).scope();
+            for (let i = 0; i < 8 && scope; i += 1) {
+                if (callOnScope(scope, preferred) || CANDIDATES.some((n) => callOnScope(scope, n))) {
+                    return { ok: true, via: 'save-el-scope', preferred, ng };
+                }
+                scope = scope.$parent;
+            }
+            saveEl.click();
+            return { ok: true, via: 'save-el-click', ng };
+        }
+
+        const reset =
+            document.querySelector('[ng-click*="ResetForecasts"]') ||
+            [...document.querySelectorAll('button')].find((b) =>
+                /^reset$/i.test((b.textContent || '').replace(/\s+/g, ' ').trim())
+            );
+
+        const anchors = [
+            reset,
+            document.querySelector('#mx-forecast-history-button'),
+            document.querySelector('#mx-forecast-dateselection-dropdown-edit'),
+            document.querySelector('#ForecastGridHeader'),
+            document.querySelector('tr.mx-fg-hour'),
+            document.querySelector('.mx-page-header'),
+            document.body,
+        ].filter(Boolean);
+
+        const seenFns = [];
+        for (const el of anchors) {
+            let scope = angular.element(el).scope();
+            for (let depth = 0; depth < 12 && scope; depth += 1) {
+                for (const key of Object.keys(scope)) {
+                    if (/save/i.test(key) && typeof scope[key] === 'function' && !seenFns.includes(key)) {
+                        seenFns.push(key);
+                    }
+                    if (scope[key] && typeof scope[key] === 'object') {
+                        for (const nested of Object.keys(scope[key])) {
+                            if (
+                                /save/i.test(nested) &&
+                                typeof scope[key][nested] === 'function' &&
+                                !seenFns.includes(`${key}.${nested}`)
+                            ) {
+                                seenFns.push(`${key}.${nested}`);
+                            }
+                        }
+                    }
+                }
+                for (const name of CANDIDATES) {
+                    if (callOnScope(scope, name)) {
+                        return { ok: true, via: 'scope-walk', name, depth, seenFns: seenFns.slice(0, 12) };
+                    }
+                }
+                scope = scope.$parent;
+            }
+            try {
+                const iso = angular.element(el).isolateScope && angular.element(el).isolateScope();
+                if (iso) {
+                    for (const name of CANDIDATES) {
+                        if (callOnScope(iso, name)) {
+                            return { ok: true, via: 'isolate', name, seenFns: seenFns.slice(0, 12) };
+                        }
+                    }
+                }
+            } catch {
+                /* ignore */
+            }
+        }
+
+        return {
+            ok: false,
+            reason: 'SaveChanges not found on scope',
+            hasReset: Boolean(reset),
+            seenFns: seenFns.slice(0, 20),
+        };
+    });
+}
+
 async function commitForecastDaySave(page, options = {}) {
     const fast = options.fast !== false;
     const hourly = options.hourly || [];
+
+    await dismissForecastOverrideEditor(page).catch(() => {});
+
+    // Prefer Angular SaveChanges on the same scope as ResetForecasts().
+    let angularSave = await invokeForecastSaveViaAngular(page);
+    if (angularSave?.ok) {
+        await waitForForecastSaveCompleted(page, SAVE_SUCCESS_TIMEOUT_MS);
+        await waitForForecastGrid(page);
+        return angularSave.via || 'SaveChanges';
+    }
 
     let savedAs = await clickForecastSave(page, {
         timeoutMs: fast ? SAVE_APPEAR_FAST_MS : SAVE_APPEAR_MS,
@@ -1752,9 +1902,16 @@ async function commitForecastDaySave(page, options = {}) {
         return savedAs;
     }
 
-    // Bulk fill can update cell text without Angular dirty → Save stays hidden.
     if (hourly.length) {
         await forceForecastFormDirty(page, hourly);
+        await dismissForecastOverrideEditor(page).catch(() => {});
+    }
+
+    angularSave = await invokeForecastSaveViaAngular(page);
+    if (angularSave?.ok) {
+        await waitForForecastSaveCompleted(page, SAVE_SUCCESS_TIMEOUT_MS);
+        await waitForForecastGrid(page);
+        return angularSave.via || 'SaveChanges';
     }
 
     savedAs = await clickForecastSave(page, {
@@ -1772,13 +1929,17 @@ async function commitForecastDaySave(page, options = {}) {
 
     const buttons = await listVisibleForecastActionButtons(page).catch(() => []);
     const sample = buttons
-        .filter((b) => b.visible || /save/i.test(b.label) || /save/i.test(b.ngClick))
-        .slice(0, 12)
+        .filter((b) => b.visible || /save|reset|change/i.test(`${b.label} ${b.ngClick}`))
+        .slice(0, 16)
         .map((b) => `${b.visible ? '' : '[hidden]'}${b.label || b.ngClick}${b.disabled ? '(disabled)' : ''}`)
         .join(' | ');
+    const scopeHint = angularSave?.seenFns?.length
+        ? ` Scope save-like fns: ${angularSave.seenFns.join(', ')}.`
+        : ` Angular: ${angularSave?.reason || 'unknown'}.`;
     throw new Error(
         'Macromatix Save button did not appear after forecast edits. Values were entered but not saved.' +
-            (sample ? ` Visible actions: ${sample}` : '')
+            (sample ? ` Visible actions: ${sample}.` : '') +
+            scopeHint
     );
 }
 
