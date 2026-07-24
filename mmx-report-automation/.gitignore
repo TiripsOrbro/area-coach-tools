@@ -1,0 +1,17 @@
+node_modules/
+.env
+.env.production
+.env.windows
+.env.pi
+.env.local
+data/inbox/*
+!data/inbox/.gitkeep
+data/out/*
+!data/out/.gitkeep
+data/out/pipeline-complete-today.json
+data/workbooks/*.xlsx
+data/browser-profile/
+data/template.xlsx
+*.log
+config/pipeline.json
+config/excel-mapping.json

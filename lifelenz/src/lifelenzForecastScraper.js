@@ -3,6 +3,8 @@ const {
     createAuthenticatedLifeLenzSession,
     parseStoreLabel,
     dedupeStores,
+    selectLifeLenzArea,
+    resolveLifeLenzArea,
 } = require('./lifelenzAuth');
 const { aggregateDayPartsFromHourlyPlan, LIFELENZ_DAY_PARTS } = require('./lifelenzDayParts');
 const { pasteIntoInput } = require('./lifelenzInput');
@@ -133,12 +135,32 @@ async function waitForDropdownOptions(page, options = {}, timeoutMs = STORE_PICK
                     document.querySelector('[role="listbox"]') ||
                     document.querySelector('[role="menu"]') ||
                     document.querySelector('[data-radix-popper-content-wrapper]');
-                if (!container) return false;
-                const r = container.getBoundingClientRect();
-                if (r.width <= 0 || r.height <= 0) return false;
-                return Boolean(
-                    container.querySelector('[role="option"], [role="menuitem"], li, button, a')
-                );
+                if (container) {
+                    const r = container.getBoundingClientRect();
+                    if (
+                        r.width > 0 &&
+                        r.height > 0 &&
+                        container.querySelector('[role="option"], [role="menuitem"], li, button, a')
+                    ) {
+                        return true;
+                    }
+                }
+                // Hierarchical location picker (Area → stores): search + area codes / store rows.
+                for (const input of document.querySelectorAll('input')) {
+                    const ph = String(input.getAttribute('placeholder') || '');
+                    if (/search by name or code/i.test(ph)) {
+                        const r = input.getBoundingClientRect();
+                        if (r.width > 0 && r.height > 0) return true;
+                    }
+                }
+                for (const el of document.querySelectorAll('button, a, [role="treeitem"], li, div, span')) {
+                    const text = (el.textContent || '').replace(/\s+/g, ' ').trim();
+                    const r = el.getBoundingClientRect();
+                    if (r.width <= 0 || r.height <= 0) continue;
+                    if (/^T\d{2}$/i.test(text)) return true;
+                    if (/^\d{4}\s*-\s*\S/.test(text) && text.length < 120) return true;
+                }
+                return false;
             }),
         { timeoutMs, pollMs: resolvePollMs(options), label: 'store dropdown options' }
     );
@@ -378,7 +400,29 @@ async function waitForStoreDropdownClosed(page, options = {}, timeoutMs = 3000) 
 }
 
 async function pickStoreOptionFromOpenDropdown(page, storeNumber, options = {}) {
-    const storePattern = new RegExp(`\\b${storeNumber}\\s*-`, 'i');
+    const store = String(storeNumber || '').trim();
+    const storePattern = new RegExp(`\\b${store}\\s*-`, 'i');
+
+    // Hierarchical picker: type into "Search by name or code" then click the match.
+    const searched = await page.evaluate(async (code) => {
+        const input = [...document.querySelectorAll('input')].find((el) => {
+            const ph = String(el.getAttribute('placeholder') || '');
+            const r = el.getBoundingClientRect();
+            return /search by name or code/i.test(ph) && r.width > 0 && r.height > 0;
+        });
+        if (!input) return false;
+        input.focus();
+        const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+        if (setter) setter.call(input, code);
+        else input.value = code;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+        return true;
+    }, store);
+    if (searched) {
+        await new Promise((resolve) => setTimeout(resolve, resolvePollMs(options) * 4));
+    }
+
     for (let pass = 0; pass < 30; pass += 1) {
         const clicked = await page.evaluate((regexSource, flags) => {
             const pattern = new RegExp(regexSource, flags);
@@ -426,8 +470,34 @@ async function selectStoreInLifeLenz(page, storeNumber, options = {}) {
             }
 
             await safeClickHandle(page, trigger);
-            if (!(await waitForDropdownOptions(page, options))) {
+            const pickerOpen = await waitForDropdownOptions(page, options);
+            if (!pickerOpen) {
                 throw new Error(`Store dropdown did not open for store ${store}.`);
+            }
+
+            // Location tree accounts: always force Area T22 (or LIFELENZ_AREA) before the store row.
+            const area = resolveLifeLenzArea(options.lifelenzArea);
+            const areaCodes = await page.evaluate(() => {
+                const codes = [];
+                const seen = new Set();
+                for (const el of document.querySelectorAll(
+                    'button, a, li, div, span, p, [role="treeitem"], [role="option"], [role="menuitem"]'
+                )) {
+                    const r = el.getBoundingClientRect();
+                    if (r.width <= 0 || r.height <= 0 || r.width > 280) continue;
+                    const text = (el.textContent || '').replace(/\s+/g, ' ').trim().toUpperCase();
+                    if (!/^T\d{2}$/.test(text) || seen.has(text)) continue;
+                    seen.add(text);
+                    codes.push(text);
+                }
+                return codes;
+            });
+            if (areaCodes.length || area) {
+                await selectLifeLenzArea(page, area, {
+                    required: areaCodes.length > 0,
+                    force: true,
+                    timeoutMs: 12000,
+                });
             }
 
             if (!(await pickStoreOptionFromOpenDropdown(page, store, options))) {
@@ -1380,7 +1450,13 @@ async function fillDayPartsWithOvernightQuirk(page, dayParts, options = {}) {
 }
 
 async function writeForecastDay(page, isoDate, planDay, options = {}) {
-    emitProgress(options, { type: 'day-start', date: isoDate, forecastTotal: planDay.forecastTotal });
+    emitProgress(options, {
+        type: 'day-start',
+        date: isoDate,
+        forecastTotal: planDay.forecastTotal,
+        weekday: planDay.weekday,
+        hourly: planDay.hourly,
+    });
     const dayParts = aggregateDayPartsFromHourlyPlan(planDay);
     const runOptions = { ...options, activeDate: isoDate };
 
@@ -1460,8 +1536,11 @@ async function writeForecastDay(page, isoDate, planDay, options = {}) {
 async function writeForecastPlanOnPage(page, storeNumber, plan, accessibleStores, options = {}) {
     const store = String(storeNumber || '').trim();
     const allowed = new Set((accessibleStores || []).map((row) => String(row.storeNumber)));
+    // Initial list can be incomplete (virtualized / wrong area leaf). Always try T22 picker.
     if (allowed.size && !allowed.has(store)) {
-        throw new Error(`Store ${store} is not in this LifeLenz account (accessible: ${[...allowed].join(', ')}).`);
+        console.warn(
+            `[LifeLenz] Store ${store} missing from initial list (${[...allowed].join(', ')}); selecting via T22 search…`
+        );
     }
 
     await runTimedPhase(options, 'select-store', () => selectStoreInLifeLenz(page, store, options), { store });
@@ -1503,6 +1582,20 @@ async function writeForecastPlanOnPage(page, storeNumber, plan, accessibleStores
     return applied;
 }
 
+function clarifyLifeLenzWaitError(err) {
+    const msg = String(err?.message || err || '');
+    if (/Waiting failed:\s*60000ms exceeded/i.test(msg)) {
+        return new Error(
+            'LifeLenz login timed out after 60s (did not reach Business Explorer / store shell). Check credentials, or try again if Macromatix was also busy.'
+        );
+    }
+    if (/Waiting failed:\s*(\d+)ms exceeded/i.test(msg)) {
+        const ms = RegExp.$1;
+        return new Error(`LifeLenz timed out after ${Math.round(Number(ms) / 1000)}s: ${msg}`);
+    }
+    return err instanceof Error ? err : new Error(msg);
+}
+
 async function writeForecastPlanToLifeLenz(storeNumber, plan, credentials, options = {}) {
     const email = String(credentials?.email || credentials?.lifelenzEmail || '').trim();
     const password = String(credentials?.password || credentials?.lifelenzPassword || '');
@@ -1515,11 +1608,20 @@ async function writeForecastPlanToLifeLenz(storeNumber, plan, credentials, optio
     let ownsSession = false;
 
     if (!page) {
-        const session = await createAuthenticatedLifeLenzSession(email, password, options);
-        browser = session.browser;
-        page = session.page;
-        options.accessibleStores = session.stores;
-        ownsSession = true;
+        emitProgress(options, { type: 'session-start', label: 'Signing in to LifeLenz…' });
+        try {
+            const session = await createAuthenticatedLifeLenzSession(email, password, options);
+            browser = session.browser;
+            page = session.page;
+            options.accessibleStores = session.stores;
+            ownsSession = true;
+            emitProgress(options, {
+                type: 'status',
+                label: `LifeLenz signed in (${(session.stores || []).length} store(s) visible)`,
+            });
+        } catch (err) {
+            throw clarifyLifeLenzWaitError(err);
+        }
     }
 
     try {

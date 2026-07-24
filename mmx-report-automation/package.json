@@ -1,0 +1,37 @@
+{
+  "name": "mmx-report-automation",
+  "version": "1.0.0",
+  "description": "Standalone Macromatix report download, local Excel merge, and data entry automation.",
+  "main": "src/run.js",
+  "scripts": {
+    "setup": "node scripts/setup-config.js",
+    "start": "node src/run.js",
+    "login": "node src/run.js --login-only",
+    "login-pi": "bash scripts/pi-login.sh",
+    "check-creds": "node scripts/check-creds.js",
+    "gate-check": "node src/run.js --gate-only",
+    "gate-watch": "node src/runGateScheduler.js",
+    "automatic-orders": "node src/runGateScheduler.js",
+    "continuous-scrapers": "node src/runContinuousScrapers.js",
+    "reports-hub": "node src/run.js --reports-hub",
+    "download-on-hand": "node src/run.js --download-on-hand",
+    "download-on-order": "node src/run.js --download-on-order",
+    "download-inventory-event": "node src/run.js --download-inventory-event",
+    "orders-test": "node src/runOrdersTest.js",
+    "discover": "node scripts/discover-mmx-menu.js",
+    "probe-stock-count": "node scripts/probe-stock-count.js",
+    "dry-run": "node src/run.js --dry-run",
+    "test-download-merge": "node src/run.js --dry-run --skip-gate --force",
+    "excel-only": "node src/runExcelOnly.js",
+    "inspect": "node scripts/inspect-workbook.js"
+  },
+  "dependencies": {
+    "dotenv": "^10.0.0",
+    "exceljs": "^4.4.0",
+    "nodemailer": "^8.0.9",
+    "puppeteer": "10.4.0",
+    "xlsx": "^0.18.5"
+  },
+  "license": "ISC",
+  "type": "commonjs"
+}

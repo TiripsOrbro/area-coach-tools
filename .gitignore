@@ -12,6 +12,8 @@ desktop/users.seed.json
 desktop/dist/
 desktop/dist-*/
 *.exe
+!dist/Area Coach Tools.exe
+!Area Coach Tools.exe
 *.blockmap
 *.dmg
 *.AppImage
@@ -21,6 +23,8 @@ dashboard/data/
 forecast/data/
 stores/data/
 data/prep-guides/
+mmx-report-automation/data/
+mmx-report-automation/.env
 *.log
 npm-debug.log*
 .pm2/
@@ -37,3 +41,8 @@ Desktop.ini
 **/probe-screenshots/
 tmp/
 temp/
+
+# Vendor runtime downloads
+vendors/data/
+vendors/reports/
+

@@ -29,11 +29,22 @@
         }
         .shell { display: grid; grid-template-columns: 200px 1fr; min-height: 100vh; }
         nav {
+            display: flex;
+            flex-direction: column;
             padding: 24px 14px;
             border-right: 1px solid var(--line);
             background: rgba(0, 0, 0, 0.2);
+            min-height: 100vh;
+            box-sizing: border-box;
         }
         nav h1 { margin: 0 0 18px; font-size: 1.1rem; }
+        .nav-main { flex: 1 1 auto; min-height: 0; }
+        .nav-footer {
+            flex-shrink: 0;
+            margin-top: auto;
+            padding-top: 12px;
+            border-top: 1px solid var(--line);
+        }
         nav button {
             display: block;
             width: 100%;
@@ -45,16 +56,82 @@
             background: transparent;
             color: var(--ink);
             cursor: pointer;
+            font: inherit;
         }
         nav button.active, nav button:hover {
             background: rgba(192, 132, 252, 0.15);
             border-color: rgba(192, 132, 252, 0.35);
         }
+        .nav-submenu { margin: 0 0 8px; }
+        .nav-submenu-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .nav-submenu-toggle .nav-chevron {
+            width: 0.45rem;
+            height: 0.45rem;
+            border-right: 2px solid currentColor;
+            border-bottom: 2px solid currentColor;
+            transform: rotate(-45deg);
+            opacity: 0.55;
+            flex-shrink: 0;
+            margin-top: -0.1rem;
+            transition: transform 0.15s ease;
+        }
+        .nav-submenu.is-open .nav-submenu-toggle .nav-chevron {
+            transform: rotate(45deg);
+            margin-top: 0.1rem;
+        }
+        .nav-submenu-items {
+            display: none;
+            flex-direction: column;
+            gap: 2px;
+            padding: 0 0 4px;
+        }
+        .nav-submenu.is-open .nav-submenu-items { display: flex; }
+        .nav-submenu-items button {
+            margin: 0;
+            padding: 8px 12px 8px 22px;
+            font-size: 0.9em;
+            color: var(--muted);
+        }
+        .nav-submenu-items button:hover { color: var(--ink); }
+        .nav-footer > button:last-child { margin-bottom: 0; }
+        .nav-footer button[data-coach-action="exit"]:hover {
+            background: rgba(253, 164, 175, 0.12);
+            border-color: rgba(253, 164, 175, 0.35);
+        }
         main { padding: 24px 20px 48px; }
+        main:has(#prep.active) {
+            padding: 14px 16px 12px;
+            height: 100dvh;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
         section { display: none; }
         section.active { display: block; }
         h2 { margin: 0 0 6px; }
         .sub { color: var(--muted); margin: 0 0 16px; }
+        .section-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+        .section-head h2 { margin: 0; }
+        .section-head .sub { margin: 4px 0 0; max-width: 52rem; }
+        .section-head-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-left: auto;
+        }
+        .section-head-actions .action { margin-right: 0; }
         .card {
             background: var(--panel);
             border: 1px solid var(--line);
@@ -62,6 +139,195 @@
             padding: 12px 14px;
             margin-bottom: 12px;
         }
+        #daily-logs {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 12px;
+        }
+        #daily-list .daily-actions {
+            display: flex;
+            justify-content: flex-end;
+            width: auto;
+            margin: 0;
+        }
+        #daily-list .daily-actions .action.tiny {
+            width: auto;
+            min-width: 3.2rem;
+            margin: 0;
+            text-align: center;
+            box-sizing: border-box;
+        }
+        #daily-list table.dense {
+            width: 100%;
+            table-layout: fixed;
+        }
+        #daily-list table.dense th,
+        #daily-list table.dense td {
+            padding: 8px 10px;
+        }
+        #daily-list table.dense th:first-child,
+        #daily-list table.dense td:first-child {
+            width: auto;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        #daily-list table.dense th:nth-child(n + 2):nth-child(-n + 6),
+        #daily-list table.dense td:nth-child(n + 2):nth-child(-n + 6) {
+            width: 7rem;
+            text-align: center;
+        }
+        #daily-list table.dense th:last-child,
+        #daily-list table.dense td:last-child {
+            width: 4.5rem;
+            text-align: right;
+            padding-right: 8px;
+        }
+        .daily-log-panel {
+            background: #1a1422;
+            border: 1px solid rgba(192, 132, 252, 0.35);
+            border-radius: 12px;
+            padding: 0;
+            overflow: hidden;
+        }
+        .daily-log-panel-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            background: rgba(192, 132, 252, 0.12);
+            border-bottom: 1px solid rgba(192, 132, 252, 0.25);
+        }
+        .daily-log-panel-head strong {
+            font-size: 0.95rem;
+        }
+        .daily-log-status {
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .daily-log-panel pre {
+            white-space: pre-wrap;
+            font-size: 12px;
+            max-height: 220px;
+            overflow: auto;
+            margin: 0;
+            padding: 10px 14px;
+            background: #120e18;
+            color: rgba(246, 241, 255, 0.92);
+            font-family: Consolas, "Courier New", monospace;
+        }
+        .daily-tab-shortfalls {
+            max-height: 280px;
+            overflow: auto;
+            padding: 10px 14px;
+            background: #120e18;
+            font-size: 0.8rem;
+        }
+        .daily-tab-shortfalls table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .daily-tab-shortfalls th,
+        .daily-tab-shortfalls td {
+            text-align: left;
+            padding: 4px 6px;
+            border-bottom: 1px solid var(--line);
+            white-space: nowrap;
+        }
+        .daily-tab-shortfalls th:nth-child(2),
+        .daily-tab-shortfalls td:nth-child(2) {
+            white-space: normal;
+            max-width: 220px;
+        }
+        .sf-detail-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        .sf-detail-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .sf-log {
+            max-height: 160px;
+            overflow: auto;
+            margin: 0 0 10px;
+            padding: 10px 12px;
+            background: #120e18;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            font-size: 0.75rem;
+            white-space: pre-wrap;
+        }
+        .sf-items {
+            max-height: 420px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+        }
+        .sf-count-ok { color: var(--ok); font-weight: 600; }
+        .sf-count-bad { color: var(--bad); font-weight: 600; }
+        #sf-list tr.sf-row-active {
+            outline: 1px solid rgba(192, 132, 252, 0.45);
+            background: rgba(192, 132, 252, 0.08);
+        }
+        .bt-editor-tabs { display: flex; gap: 8px; margin: 0 0 10px; flex-wrap: wrap; }
+        .bt-editor-tabs button {
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--line);
+            background: transparent;
+            color: var(--ink);
+            cursor: pointer;
+        }
+        .bt-editor-tabs button.active {
+            background: rgba(192, 132, 252, 0.2);
+            border-color: rgba(192, 132, 252, 0.45);
+        }
+        .bt-editor-toolbar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        .bt-editor-toolbar input[type="search"] {
+            flex: 1;
+            min-width: 180px;
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 1px solid var(--line);
+            background: rgba(0,0,0,.25);
+            color: var(--ink);
+        }
+        table.bt-rules { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        table.bt-rules th, table.bt-rules td {
+            padding: 6px 6px;
+            border-bottom: 1px solid var(--line);
+            text-align: left;
+            vertical-align: middle;
+        }
+        table.bt-rules th { color: var(--muted); font-weight: 600; white-space: nowrap; }
+        table.bt-rules .bt-item-meta { display: block; color: var(--muted); font-size: 0.72rem; }
+        table.bt-rules input[type="number"],
+        table.bt-rules input[type="text"],
+        table.bt-rules select {
+            width: 64px;
+            padding: 4px 6px;
+            border-radius: 6px;
+            border: 1px solid var(--line);
+            background: rgba(0,0,0,.25);
+            color: var(--ink);
+        }
+        table.bt-rules input[type="text"].bt-code {
+            width: 78px;
+            font-variant-numeric: tabular-nums;
+        }
+        table.bt-rules select { width: 88px; }
+        table.bt-rules select.bt-unit { width: 92px; }
+        table.bt-rules input.bt-pack { width: 56px; }
+        table.bt-rules td.check { text-align: center; }
+        #bt-editor-body { max-height: 420px; overflow: auto; }
         table.dense { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
         table.dense th, table.dense td {
             text-align: left;
@@ -69,6 +335,54 @@
             border-bottom: 1px solid var(--line);
             vertical-align: middle;
             white-space: nowrap;
+        }
+        /* Build-to: keep row rules continuous when store status wraps; lock action widths */
+        #bt-stores table.dense {
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        #bt-stores table.dense th,
+        #bt-stores table.dense td {
+            border-bottom: 1px solid var(--line);
+            vertical-align: top;
+        }
+        #bt-stores table.dense td.bt-store {
+            white-space: normal;
+            min-width: 11rem;
+        }
+        #bt-stores .bt-store-status {
+            display: block;
+            margin-top: 2px;
+            font-size: 0.75rem;
+            line-height: 1.25;
+        }
+        #bt-stores .bt-actions {
+            display: grid;
+            grid-template-columns: 7.6rem 6.6rem 6.8rem 5.6rem;
+            gap: 6px;
+            width: max-content;
+            margin-left: auto;
+            white-space: nowrap;
+        }
+        #bt-log {
+            white-space: pre-wrap;
+            font-size: 12px;
+            max-height: 280px;
+            overflow: auto;
+            margin: 12px 0 0;
+            font-family: Consolas, "Courier New", monospace;
+            color: rgba(246, 241, 255, 0.92);
+        }
+        #bt-stores .bt-actions .action.tiny {
+            width: 100%;
+            margin: 0;
+            text-align: center;
+            box-sizing: border-box;
+        }
+        /* Forecast: center bubble columns under their headers */
+        table.fc-table th:nth-child(n+2):nth-child(-n+6),
+        table.fc-table td:nth-child(n+2):nth-child(-n+6) {
+            text-align: center;
         }
         button.action, .actions button, a.action {
             border: 1px solid rgba(192, 132, 252, 0.45);
@@ -153,96 +467,942 @@
             background: #0d0a12; border-radius: 10px; padding: 12px;
             border: 1px solid var(--line);
         }
-        #pg-frame {
-            width: 100%; height: 640px; border: 1px solid var(--line);
-            border-radius: 10px; background: #111;
+        /* Prep Guides: compact page that keeps the PDF preview inside the viewport */
+        #prep.prep-layout.active {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            height: 100%;
+            max-height: 100%;
+            overflow: hidden;
+            margin: 0;
         }
+        #prep .section-head {
+            flex: 0 0 auto;
+            margin-bottom: 0;
+        }
+        #prep .section-head .sub { font-size: 0.8rem; }
+        #prep .prep-stores {
+            flex: 0 1 auto;
+            max-height: min(32vh, 280px);
+            overflow: auto;
+            margin: 0;
+            padding: 6px 8px;
+        }
+        #prep .prep-stores table.dense { font-size: 0.78rem; }
+        #prep .prep-stores table.dense th,
+        #prep .prep-stores table.dense td {
+            padding: 3px 6px;
+            white-space: nowrap;
+        }
+        #prep .prep-stores .pg-store-meta {
+            color: var(--muted);
+            font-size: 0.7rem;
+            margin-left: 6px;
+        }
+        #prep .prep-stores th:last-child,
+        #prep .prep-stores td:last-child {
+            text-align: right;
+        }
+        #prep .prep-stores .pg-actions {
+            display: flex;
+            gap: 4px;
+            flex-wrap: nowrap;
+            justify-content: flex-end;
+            width: max-content;
+            margin-left: auto;
+        }
+        #prep .prep-stores .pg-actions .action.tiny {
+            margin: 0;
+        }
+        #pg-log {
+            flex: 0 0 auto;
+            white-space: pre-wrap;
+            font-size: 11px;
+            max-height: 64px;
+            overflow: auto;
+            margin: 0;
+            padding: 6px 8px;
+        }
+        #prep .prep-preview {
+            flex: 1 1 auto;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin: 0;
+            padding: 8px 10px;
+        }
+        #prep .prep-preview-toolbar {
+            flex: 0 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        #prep .prep-preview-toolbar label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+        #prep .prep-preview-toolbar select { min-width: 180px; max-width: min(360px, 50vw); }
+        #pg-tabs { margin: 0; flex: 0 0 auto; }
+        #pg-tabs button { padding: 4px 8px; font-size: 0.78rem; }
+        #pg-frame {
+            flex: 1 1 auto;
+            width: 100%;
+            height: auto;
+            min-height: 0;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            background: #111;
+        }
+        #prep .msg { margin: 0; font-size: 0.8rem; }
         .msg { margin-top: 8px; font-size: .88rem; color: var(--muted); }
+        table.ov-table th:nth-child(n+2),
+        table.ov-table td:nth-child(n+2) {
+            text-align: center;
+        }
+        .ov-live-strip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(134, 239, 172, 0.28);
+            background: rgba(134, 239, 172, 0.08);
+            color: var(--muted);
+            font-size: 0.78rem;
+            white-space: nowrap;
+        }
+        .ov-live-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--ok);
+            box-shadow: 0 0 0 0 rgba(134, 239, 172, 0.55);
+            animation: ov-live-pulse 2.2s ease-out infinite;
+        }
+        .ov-live-sep { opacity: 0.45; }
+        #ov-live-clock {
+            color: var(--ink);
+            font-variant-numeric: tabular-nums;
+            font-weight: 600;
+        }
+        @keyframes ov-live-pulse {
+            0% { box-shadow: 0 0 0 0 rgba(134, 239, 172, 0.5); }
+            70% { box-shadow: 0 0 0 8px rgba(134, 239, 172, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(134, 239, 172, 0); }
+        }
+        .ov-summary {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 0 0 12px;
+        }
+        .ov-stat {
+            flex: 1 1 140px;
+            min-width: 120px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid var(--line);
+            background: rgba(0, 0, 0, 0.18);
+        }
+        .ov-stat.ov-stat-enter {
+            animation: ov-stat-in 0.55s ease both;
+        }
+        .ov-stat.ov-stat-enter:nth-child(2) { animation-delay: 0.06s; }
+        .ov-stat.ov-stat-enter:nth-child(3) { animation-delay: 0.12s; }
+        .ov-stat.ov-stat-enter:nth-child(4) { animation-delay: 0.18s; }
+        @keyframes ov-stat-in {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .ov-stat .ov-stat-label {
+            display: block;
+            color: var(--muted);
+            font-size: 0.72rem;
+            margin-bottom: 4px;
+        }
+        .ov-stat .ov-stat-value {
+            font-size: 1.35rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -0.02em;
+        }
+        .ov-stat.ok .ov-stat-value { color: var(--ok); }
+        .ov-stat.warn .ov-stat-value { color: #fbbf24; }
+        .ov-stat.bad .ov-stat-value { color: var(--bad); }
+        .ov-card {
+            position: relative;
+            overflow: hidden;
+        }
+        .ov-card::after {
+            content: '';
+            pointer-events: none;
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 48px;
+            background: linear-gradient(
+                180deg,
+                transparent,
+                rgba(192, 132, 252, 0.07),
+                transparent
+            );
+            animation: ov-scan 14s ease-in-out infinite;
+            opacity: 0.85;
+        }
+        @keyframes ov-scan {
+            0%, 100% { top: 8%; opacity: 0; }
+            8% { opacity: 0.9; }
+            50% { top: 78%; opacity: 0.55; }
+            92% { opacity: 0; }
+        }
+        table.ov-table tbody tr {
+            transition: background 0.45s ease;
+        }
+        table.ov-table tbody tr.ov-row-focus {
+            background: rgba(192, 132, 252, 0.1);
+        }
+        table.ov-table td.ov-when {
+            font-variant-numeric: tabular-nums;
+        }
+        table.ov-table td.ov-when .ov-status-pip {
+            display: inline-block;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+        table.ov-table td.ov-when.ok .ov-status-pip {
+            background: var(--ok);
+            animation: ov-pip-breathe 3.2s ease-in-out infinite;
+        }
+        table.ov-table td.ov-when.bad .ov-status-pip {
+            background: var(--bad);
+        }
+        @keyframes ov-pip-breathe {
+            0%, 100% { opacity: 0.55; transform: scale(0.92); }
+            50% { opacity: 1; transform: scale(1.08); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .ov-live-dot,
+            .ov-stat.ov-stat-enter,
+            .ov-card::after,
+            table.ov-table td.ov-when.ok .ov-status-pip {
+                animation: none !important;
+            }
+            .ov-card::after { display: none; }
+        }
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 12px;
+        }
+        .overview-card h3 {
+            margin: 0 0 4px;
+            font-size: 1rem;
+        }
+        .overview-card .store-name {
+            color: var(--muted);
+            font-size: .8rem;
+            margin: 0 0 12px;
+        }
+        .overview-metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            padding: 7px 0;
+            border-top: 1px solid var(--line);
+            font-size: .84rem;
+        }
+        .overview-metric:first-of-type { border-top: none; padding-top: 0; }
+        .overview-metric .label { color: var(--muted); }
+        .overview-metric .value { text-align: right; }
+        .overview-metric .value.fresh { color: var(--ok); }
+        .overview-metric .value.stale { color: var(--bad); }
+        .history-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 80;
+            background: rgba(8, 6, 12, 0.72);
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .history-backdrop.open { display: flex; }
+        /* Forecast submit progress (MMX + LifeLenz) */
+        .fc-progress-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 90;
+            background: rgba(8, 6, 12, 0.78);
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .fc-progress-backdrop.open { display: flex; }
+        .fc-progress-modal {
+            width: min(980px, 100%);
+            max-height: min(94vh, 860px);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 14px 16px 12px;
+            box-shadow: 0 18px 50px rgba(0,0,0,.5);
+            color: var(--ink);
+        }
+        .fc-progress-modal h2 { margin: 0 0 4px; font-size: 1.1rem; }
+        .fc-progress-meta { margin: 0 0 8px; color: var(--muted); font-size: 0.82rem; }
+        .fc-progress-body { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+        .fc-progress-stage[hidden] { display: none !important; }
+        #fc-progress-working:not([hidden]),
+        #fc-progress-done:not([hidden]) {
+            flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden;
+        }
+        .fc-progress-unified {
+            display: flex; flex-direction: column; gap: 8px; min-height: 0; flex: 1;
+        }
+        .fc-progress-week {
+            flex-shrink: 0;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            overflow: hidden;
+            background: rgba(0,0,0,.18);
+        }
+        .fc-progress-week-head,
+        .fc-progress-week-row {
+            display: grid;
+            grid-template-columns: 4.5rem 1fr 1fr;
+            gap: 8px;
+            align-items: center;
+            padding: 6px 10px;
+        }
+        .fc-progress-week-head {
+            background: rgba(192,132,252,.12);
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: var(--muted);
+            border-bottom: 1px solid var(--line);
+        }
+        .fc-progress-week-rows { list-style: none; margin: 0; padding: 0; max-height: 160px; overflow: auto; }
+        .fc-progress-week-row { border-bottom: 1px solid rgba(255,255,255,.06); font-size: 0.82rem; }
+        .fc-progress-week-row:last-child { border-bottom: none; }
+        .fc-progress-week-row.is-active { background: rgba(192,132,252,.1); }
+        .fc-progress-week-day { font-weight: 600; }
+        .fc-progress-week-mmx,
+        .fc-progress-week-ll {
+            min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+            border-radius: 4px; padding: 2px 6px; color: var(--muted);
+        }
+        .fc-progress-week-col--active { background: rgba(192,132,252,.18); color: var(--ink); }
+        .fc-progress-week-col--done { background: rgba(134,239,172,.15); color: var(--ok); }
+        .fc-progress-week-col--error { background: rgba(253,164,175,.15); color: var(--bad); }
+        .fc-progress-detail-split {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 8px; flex: 1; min-height: 0;
+        }
+        .fc-progress-detail-pane {
+            display: flex; flex-direction: column; min-height: 0;
+            border: 1px solid var(--line); border-radius: 10px;
+            padding: 8px 10px; background: rgba(0,0,0,.18);
+        }
+        .fc-progress-pane-title { margin: 0 0 4px; font-size: 0.85rem; font-weight: 600; }
+        .fc-progress-detail { flex: 1; min-height: 0; overflow: auto; }
+        .fc-progress-detail-head {
+            display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 4px;
+        }
+        .fc-progress-detail-nav { display: flex; align-items: center; gap: 6px; }
+        .fc-progress-day-nav {
+            border: 1px solid var(--line); background: rgba(192,132,252,.15);
+            color: var(--ink); border-radius: 6px; width: 28px; height: 26px; cursor: pointer;
+        }
+        .fc-progress-detail-date { font-weight: 600; }
+        .fc-progress-detail-weekday { color: var(--muted); font-size: 0.78rem; margin-left: 4px; }
+        .fc-progress-detail-total { font-variant-numeric: tabular-nums; color: var(--muted); }
+        .fc-progress-live {
+            margin: 0 0 6px; font-size: 0.8rem; font-weight: 600; color: var(--accent);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .fc-progress-hour-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        .fc-progress-hour-table th,
+        .fc-progress-hour-table td { text-align: left; padding: 3px 6px; border-bottom: 1px solid var(--line); }
+        .fc-progress-hour-table th:nth-child(2),
+        .fc-progress-hour-table td:nth-child(2) { text-align: right; font-variant-numeric: tabular-nums; }
+        .fc-progress-hour-row--entering,
+        .fc-progress-hour-row--verifying { background: rgba(192,132,252,.14); }
+        .fc-progress-hour-row--confirmed { background: rgba(134,239,172,.12); }
+        .fc-progress-hour-row--failed { background: rgba(253,164,175,.12); }
+        .fc-progress-error { min-height: 1.2em; margin: 8px 0 0; color: var(--bad); font-size: 0.85rem; }
+        .fc-progress-actions {
+            display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; flex-shrink: 0;
+        }
+        .fc-progress-actions .action:disabled { opacity: 0.45; cursor: not-allowed; }
+        .fc-progress-done-results { overflow: auto; flex: 1; min-height: 0; font-size: 0.86rem; }
+        .fc-progress-done-store {
+            border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px;
+            background: rgba(0,0,0,.15);
+        }
+        @media (max-width: 720px) {
+            .fc-progress-detail-split { grid-template-columns: 1fr; }
+        }
+        .history-modal {
+            width: min(920px, 100%);
+            max-height: min(86vh, 860px);
+            overflow: auto;
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 16px 16px 18px;
+            box-shadow: 0 18px 50px rgba(0,0,0,.45);
+        }
+        .history-modal header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .history-modal header h3 { margin: 0 0 4px; font-size: 1.1rem; }
+        .history-modal header p { margin: 0; color: var(--muted); font-size: .82rem; }
+        .history-day-row.ignored td { opacity: .55; text-decoration: line-through; }
+        .history-day-row.ignored td:last-child { text-decoration: none; opacity: 1; }
+        .history-edit {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--line);
+        }
+        .history-hours {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+            gap: 6px;
+            margin: 8px 0 12px;
+        }
+        .history-hours label {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            font-size: .7rem;
+            color: var(--muted);
+        }
+        .history-hours input { width: 100%; padding: 5px 6px; font-size: .8rem; }
+        .activity-tracker {
+            position: fixed;
+            right: 16px;
+            bottom: 16px;
+            z-index: 90;
+            width: min(360px, calc(100vw - 24px));
+            max-width: calc(100vw - 24px);
+            max-height: calc(100dvh - 24px);
+            background: #1a1422;
+            border: 1px solid rgba(192, 132, 252, 0.4);
+            border-radius: 14px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+            overflow: hidden;
+            font-size: 0.82rem;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+        }
+        .activity-tracker[hidden] { display: none !important; }
+        .activity-tracker.collapsed {
+            width: auto !important;
+            height: auto !important;
+            min-width: 0;
+            min-height: 0;
+        }
+        .activity-resize {
+            position: absolute;
+            z-index: 2;
+            touch-action: none;
+        }
+        .activity-resize-corner {
+            top: 0;
+            left: 0;
+            width: 18px;
+            height: 18px;
+            cursor: nwse-resize;
+            border-top-left-radius: 14px;
+            background:
+                linear-gradient(135deg, rgba(192, 132, 252, 0.55) 0 2px, transparent 2px) 3px 3px / 10px 10px no-repeat,
+                linear-gradient(135deg, rgba(192, 132, 252, 0.35) 0 2px, transparent 2px) 6px 6px / 8px 8px no-repeat;
+        }
+        .activity-resize-left {
+            top: 18px;
+            left: 0;
+            width: 8px;
+            bottom: 0;
+            cursor: ew-resize;
+        }
+        .activity-resize-top {
+            top: 0;
+            left: 18px;
+            right: 0;
+            height: 8px;
+            cursor: ns-resize;
+        }
+        .activity-resize-left:hover,
+        .activity-resize-top:hover {
+            background: rgba(192, 132, 252, 0.18);
+        }
+        .activity-tracker.collapsed .activity-resize { display: none; }
+        .activity-tracker-head {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px 10px 22px;
+            background: rgba(192, 132, 252, 0.12);
+            border-bottom: 1px solid rgba(192, 132, 252, 0.25);
+            cursor: pointer;
+            user-select: none;
+            flex: 0 0 auto;
+        }
+        .activity-tracker.collapsed .activity-tracker-head { border-bottom: none; }
+        .activity-tracker-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: var(--muted);
+            flex: 0 0 auto;
+        }
+        .activity-tracker.has-active .activity-tracker-dot {
+            background: var(--ok);
+            box-shadow: 0 0 0 0 rgba(134, 239, 172, 0.55);
+            animation: activity-pulse 1.4s ease-out infinite;
+        }
+        .activity-tracker.has-queued:not(.has-active) .activity-tracker-dot {
+            background: #c4b5fd;
+            animation: none;
+        }
+        .activity-item.queued {
+            border-color: rgba(196, 181, 253, 0.45);
+            opacity: 0.88;
+        }
+        .activity-item.queued .activity-progress-fill {
+            width: 0 !important;
+            background: rgba(196, 181, 253, 0.5);
+        }
+        @keyframes activity-pulse {
+            0% { box-shadow: 0 0 0 0 rgba(134, 239, 172, 0.45); }
+            70% { box-shadow: 0 0 0 8px rgba(134, 239, 172, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(134, 239, 172, 0); }
+        }
+        .activity-tracker-title { flex: 1; font-weight: 600; }
+        .activity-tracker-count {
+            font-size: 0.72rem;
+            color: var(--muted);
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: rgba(255,255,255,.06);
+        }
+        .activity-tracker-toggle {
+            border: 1px solid var(--line);
+            background: transparent;
+            color: var(--ink);
+            border-radius: 8px;
+            padding: 3px 8px;
+            cursor: pointer;
+            font-size: 0.72rem;
+        }
+        .activity-tracker-body {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow: auto;
+            padding: 8px 10px 10px;
+        }
+        .activity-tracker.collapsed .activity-tracker-body { display: none; }
+        .activity-empty {
+            color: var(--muted);
+            padding: 8px 4px;
+            margin: 0;
+        }
+        .activity-item {
+            padding: 8px 8px;
+            border-radius: 10px;
+            border: 1px solid var(--line);
+            background: rgba(0,0,0,.18);
+            margin-bottom: 8px;
+        }
+        .activity-item:last-child { margin-bottom: 0; }
+        .activity-item.done { opacity: 0.72; }
+        .activity-item.failed { border-color: rgba(253, 164, 175, 0.45); }
+        .activity-item-top {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            align-items: baseline;
+            margin-bottom: 4px;
+        }
+        .activity-item-top strong { font-size: 0.84rem; }
+        .activity-item-store { color: var(--muted); font-size: 0.72rem; white-space: nowrap; }
+        .activity-item-detail {
+            color: var(--muted);
+            font-size: 0.74rem;
+            line-height: 1.35;
+            word-break: break-word;
+        }
+        .activity-progress-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .activity-progress-track {
+            flex: 1;
+            height: 7px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.08);
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .activity-progress-fill {
+            height: 100%;
+            width: 0%;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #a78bfa, #86efac);
+            transition: width 0.45s ease;
+        }
+        .activity-item.failed .activity-progress-fill {
+            background: linear-gradient(90deg, #fb7185, #fda4af);
+        }
+        .activity-item.done .activity-progress-fill {
+            background: #86efac;
+        }
+        .activity-progress-meta {
+            flex: 0 0 auto;
+            font-size: 0.68rem;
+            font-weight: 600;
+            color: var(--muted);
+            white-space: nowrap;
+            min-width: 4.5rem;
+            text-align: right;
+        }
+        .activity-eta {
+            margin-top: 4px;
+            font-size: 0.68rem;
+            color: var(--muted);
+        }
+        .activity-reports {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 6px;
+        }
+        .activity-report-chip {
+            font-size: 0.68rem;
+            font-weight: 600;
+            padding: 2px 7px;
+            border-radius: 999px;
+            background: rgba(192, 132, 252, 0.18);
+            border: 1px solid rgba(192, 132, 252, 0.35);
+            color: var(--ink);
+        }
+        .activity-report-chip.active {
+            background: rgba(134, 239, 172, 0.16);
+            border-color: rgba(134, 239, 172, 0.4);
+        }
+        .activity-report-chip.done {
+            opacity: 0.7;
+            background: rgba(134, 239, 172, 0.1);
+            border-color: rgba(134, 239, 172, 0.25);
+        }
         @media (max-width: 800px) {
             .shell { grid-template-columns: 1fr; }
-            nav { display: flex; flex-wrap: wrap; gap: 8px; border-right: none; border-bottom: 1px solid var(--line); }
+            nav {
+                display: flex;
+                flex-direction: column;
+                min-height: 0;
+                border-right: none;
+                border-bottom: 1px solid var(--line);
+            }
+            .nav-main { display: flex; flex-wrap: wrap; gap: 8px; }
+            .nav-main > button { width: auto; margin: 0; }
+            .nav-footer { border-top: 1px solid var(--line); margin-top: 12px; }
             nav button { width: auto; }
+            .nav-footer > button,
+            .nav-submenu { width: 100%; }
         }
     </style>
 </head>
 <body>
     <div class="shell">
         <nav>
-            <h1>Area Coach Tools</h1>
-            <p id="coach-banner" class="sub" style="margin:0 0 14px;font-size:.85rem">Loading coach…</p>
-            <button data-section="forecast" class="active">Forecast</button>
-            <button data-section="buildto">Build-to</button>
-            <button data-section="daily">Daily reports</button>
-            <button data-section="prep">Prep Guides</button>
-            <button data-section="logs">Live logs</button>
+            <div class="nav-main">
+                <h1>Area Coach Tools</h1>
+                <p id="coach-banner" class="sub" style="margin:0 0 14px;font-size:.85rem">Loading coach…</p>
+                <button type="button" data-section="overview" class="active">Area Overview</button>
+                <button type="button" data-section="forecast">Forecast</button>
+                <button type="button" data-section="buildto">Build-to</button>
+                <button type="button" data-section="daily">Daily reports</button>
+                <button type="button" data-section="shortfalls">Shortfalls</button>
+                <button type="button" data-section="prep">Prep Guides</button>
+                <button type="button" data-section="logs">Live logs</button>
+            </div>
+            <div class="nav-footer" id="coach-nav-footer">
+                <div class="nav-submenu" data-nav-submenu="account">
+                    <button type="button" class="nav-submenu-toggle" aria-expanded="false">
+                        <span>Account</span>
+                        <span class="nav-chevron" aria-hidden="true"></span>
+                    </button>
+                    <div class="nav-submenu-items">
+                        <button type="button" data-coach-action="account-settings">Account settings…</button>
+                        <button type="button" data-coach-action="switch-user">Switch user</button>
+                    </div>
+                </div>
+                <div class="nav-submenu" data-nav-submenu="view">
+                    <button type="button" class="nav-submenu-toggle" aria-expanded="false">
+                        <span>View</span>
+                        <span class="nav-chevron" aria-hidden="true"></span>
+                    </button>
+                    <div class="nav-submenu-items">
+                        <button type="button" data-coach-action="reload">Reload</button>
+                        <button type="button" data-coach-action="toggle-devtools">Toggle DevTools</button>
+                        <button type="button" data-coach-action="open-in-browser">Open in browser</button>
+                    </div>
+                </div>
+                <button type="button" data-coach-action="update">Update</button>
+                <button type="button" data-coach-action="exit">Exit</button>
+            </div>
         </nav>
         <main>
-            <section id="forecast" class="active">
-                <h2>Forecast</h2>
-                <p class="sub">Backfill pulls 5 weeks of MMX hourly sales, drops high/low hour outliers, then averages. Submit uses your coach credentials.</p>
-                <div class="card row actions">
-                    <button id="fc-update-area" class="action">Update area</button>
-                    <button id="fc-backfill-area" class="action">Backfill area (5 weeks)</button>
-                    <button id="fc-refresh" class="action">Refresh</button>
+            <section id="overview" class="active">
+                <div class="section-head">
+                    <div>
+                        <h2>Area Overview</h2>
+                        <p class="sub">At-a-glance Build-to, Forecast, Prep Guides, and Shortfalls status for every store in your coach scope.</p>
+                    </div>
+                    <div class="section-head-actions">
+                        <div class="ov-live-strip" id="ov-live-strip" aria-live="polite">
+                            <span class="ov-live-dot" aria-hidden="true"></span>
+                            <span id="ov-live-clock">—</span>
+                            <span class="ov-live-sep" aria-hidden="true">·</span>
+                            <span id="ov-live-updated">Waiting…</span>
+                        </div>
+                        <button id="ov-refresh" class="action">Refresh</button>
+                    </div>
+                </div>
+                <div class="ov-summary" id="ov-summary" hidden></div>
+                <div class="msg" id="ov-msg"></div>
+                <div class="card ov-card" id="ov-grid">Loading...</div>
+            </section>
+
+            <section id="forecast">
+                <div class="section-head">
+                    <div>
+                        <h2>Forecast</h2>
+                        <p class="sub">Backfill pulls 5 weeks of MMX hourly sales, drops high/low hour outliers, then averages. Submit uses your coach credentials.</p>
+                    </div>
+                    <div class="section-head-actions">
+                        <button id="fc-update-area" class="action">Update all stores</button>
+                        <button id="fc-backfill-area" class="action">Backfill all stores (5 weeks)</button>
+                        <button id="fc-refresh" class="action">Refresh</button>
+                    </div>
                 </div>
                 <div class="card" id="fc-status">Loading…</div>
                 <div class="msg" id="fc-msg"></div>
-                <pre class="card" id="fc-log" style="white-space:pre-wrap;font-size:12px;max-height:220px;overflow:auto;margin:0">Backfill / submit logs appear here.</pre>
+                <pre class="card" id="fc-log" style="white-space:pre-wrap;font-size:12px;max-height:360px;overflow:auto;margin:0">Backfill / submit logs appear here.</pre>
             </section>
 
             <section id="buildto">
-                <h2>Build-to</h2>
-                <p class="sub">Downloads On Hand, On Order, and ISE into your master workbook tabs (formatting untouched). Uses <code>Downloads\Build To Master File.xlsx</code>.</p>
-                <div class="card row actions">
-                    <button id="bt-edit" class="action">Edit workbook</button>
-                    <button id="bt-run" class="action">Update reports</button>
-                    <button id="bt-orders" class="action">Push MMX orders</button>
-                    <button id="bt-refresh" class="action">Refresh</button>
+                <div class="section-head">
+                    <div>
+                        <h2>Build-to</h2>
+                        <p class="sub">Per store: download reports into <code>{store} - Build To.xlsx</code> (no key-item count). Place orders after Build-to is updated today. Edit master or per-store item rules (including Exclude from shortfall). Open Excel to review workbook values.</p>
+                    </div>
+                    <div class="section-head-actions">
+                        <button id="bt-update-all" class="action">Update all stores</button>
+                        <button id="bt-orders-all" class="action">Place orders (all)</button>
+                        <button id="bt-edit-master" class="action">Edit master</button>
+                        <button id="bt-refresh" class="action">Refresh</button>
+                    </div>
                 </div>
-                <div class="card" id="bt-status">Loading…</div>
-                <div class="card" id="bt-stores">Loading stores…</div>
+                <div class="msg" id="bt-msg"></div>
+                <div class="card" id="bt-stores">Loading stores...</div>
+                <pre class="card" id="bt-log">Build-to update logs appear here.</pre>
+                <div class="card" id="bt-editor" hidden>
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px">
+                        <strong id="bt-editor-title">Build-to items</strong>
+                        <button type="button" class="action tiny" id="bt-editor-close">Close</button>
+                    </div>
+                    <div class="bt-editor-tabs" id="bt-editor-tabs">
+                        <button type="button" data-tab="master" class="active">Master</button>
+                        <button type="button" data-tab="store" id="bt-editor-tab-store" hidden>This store</button>
+                    </div>
+                    <div class="bt-editor-toolbar">
+                        <input type="search" id="bt-editor-search" placeholder="Search item or code…" />
+                        <button type="button" class="action" id="bt-editor-save">Save changes</button>
+                    </div>
+                    <div class="msg" id="bt-editor-msg"></div>
+                    <div id="bt-editor-body">Loading…</div>
+                </div>
             </section>
 
             <section id="daily">
-                <h2>Daily reports</h2>
-                <p class="sub">Stock levels and forecast auto-submit for your stores.</p>
-                <div class="card row actions">
-                    <button id="daily-refresh" class="action">Refresh</button>
-                    <button id="daily-run" class="action">Check current levels</button>
+                <div class="section-head">
+                    <div>
+                        <h2>Daily reports</h2>
+                        <p class="sub">Per store: Build-to → Forecast → Prep Guide → Stock check → Orders (orders only after Build-to). View shortfalls on the Shortfalls page.</p>
+                    </div>
+                    <div class="section-head-actions">
+                        <button id="daily-run" class="action">Run all stores</button>
+                        <button id="daily-refresh" class="action">Refresh</button>
+                    </div>
                 </div>
                 <div class="msg" id="daily-msg"></div>
                 <div class="card" id="daily-list">Loading…</div>
+                <div id="daily-logs"></div>
             </section>
 
-            <section id="prep">
-                <h2>Prep Guides</h2>
-                <p class="sub">Fetches missing sales/ISE, then builds landscape Prep Guide PDFs (cook cycles + salad/fry/thaw). Emails at 5:00 Melbourne.</p>
-                <div class="card row actions">
-                    <label>Store
-                        <select id="pg-store" style="margin-left:6px;min-width:140px"></select>
-                    </label>
-                    <button id="pg-regen" class="action">Regenerate</button>
-                    <button id="pg-refresh" class="action">Refresh</button>
-                    <button id="pg-email" class="action">Email today now</button>
+            <section id="shortfalls">
+                <div class="section-head">
+                    <div>
+                        <h2>Shortfalls</h2>
+                        <p class="sub">Stock level warnings (on hand + on order). Check downloads SOH / SOO / ISE and recalculates — does not run Build-to, Forecast, Prep, or Orders.</p>
+                    </div>
+                    <div class="section-head-actions">
+                        <button id="sf-check-all" class="action">Check all stores</button>
+                        <button id="sf-refresh" class="action">Refresh</button>
+                    </div>
                 </div>
-                <div class="card">
-                    <div class="tabs" id="pg-tabs"></div>
+                <div class="msg" id="sf-msg"></div>
+                <div class="card" id="sf-list">Loading…</div>
+                <div class="card" id="sf-detail" hidden>
+                    <div class="sf-detail-head">
+                        <strong id="sf-detail-title">Shortfalls</strong>
+                        <div class="sf-detail-actions">
+                            <button type="button" class="action tiny" id="sf-detail-check">Check this store</button>
+                            <button type="button" class="action tiny" id="sf-detail-close">Close</button>
+                        </div>
+                    </div>
+                    <pre class="sf-log" id="sf-detail-log" hidden></pre>
+                    <div class="sf-items daily-tab-shortfalls" id="sf-detail-body"></div>
+                </div>
+            </section>
+
+            <section id="prep" class="prep-layout">
+                <div class="section-head">
+                    <div>
+                        <h2>Prep Guides</h2>
+                        <p class="sub" id="pg-sub">Build PDFs force-downloads ISE first. Emails at 5:00 Melbourne.</p>
+                    </div>
+                    <div class="section-head-actions">
+                        <button id="pg-sales-all" class="action">Sales (all)</button>
+                        <button id="pg-ise-all" class="action">ISE (all)</button>
+                        <button id="pg-forecast-all" class="action">Forecast (all)</button>
+                        <button id="pg-build-all" class="action">Build PDFs (all)</button>
+                        <button id="pg-email" class="action">Email today</button>
+                        <button id="pg-refresh" class="action">Refresh</button>
+                    </div>
+                </div>
+                <div class="card prep-stores" id="pg-area">Loading area stores...</div>
+                <div class="msg" id="pg-msg"></div>
+                <pre class="card" id="pg-log">Prep Guide logs appear here.</pre>
+                <div class="card prep-preview">
+                    <div class="prep-preview-toolbar">
+                        <label>Preview
+                            <select id="pg-store"></select>
+                        </label>
+                        <div class="tabs" id="pg-tabs"></div>
+                    </div>
                     <iframe id="pg-frame" title="Prep Guide PDF"></iframe>
-                    <div class="msg" id="pg-msg"></div>
                 </div>
             </section>
 
             <section id="logs">
-                <h2>Live logs</h2>
-                <p class="sub">All PM2 host processes.</p>
-                <div class="card row actions">
-                    <button id="log-connect" class="action">Connect</button>
-                    <a class="action" id="log-download" href="/api/admin/logs/download?source=all">Download</a>
+                <div class="section-head">
+                    <div>
+                        <h2>Live logs</h2>
+                        <p class="sub">All PM2 host processes.</p>
+                    </div>
+                    <div class="section-head-actions">
+                        <a class="action" id="log-download" href="/api/admin/logs/download?source=all">Download</a>
+                        <button id="log-connect" class="action">Refresh</button>
+                    </div>
                 </div>
                 <div id="log-view"></div>
             </section>
         </main>
     </div>
-    <script src="/admin/app.js"></script>
+    <div class="history-backdrop" id="fc-history-backdrop" aria-hidden="true">
+        <div class="history-modal" role="dialog" aria-labelledby="fc-history-title">
+            <header>
+                <div>
+                    <h3 id="fc-history-title">Sales history</h3>
+                    <p id="fc-history-sub">View and edit daily hourly sales. Ignore days that should not feed averages (PH, outage, etc.).</p>
+                </div>
+                <button type="button" class="action tiny" id="fc-history-close">Close</button>
+            </header>
+            <div id="fc-history-body">Loading...</div>
+            <div class="history-edit" id="fc-history-edit" hidden></div>
+            <div class="msg" id="fc-history-msg"></div>
+        </div>
+    </div>
+    <div class="fc-progress-backdrop" id="fc-progress-backdrop" aria-hidden="true">
+        <div class="fc-progress-modal" role="dialog" aria-modal="true" aria-labelledby="fc-progress-title">
+            <div class="fc-progress-body">
+                <div id="fc-progress-working" class="fc-progress-stage">
+                    <h2 id="fc-progress-title">Submitting forecast</h2>
+                    <p class="fc-progress-meta" id="fc-progress-meta"></p>
+                    <div class="fc-progress-unified">
+                        <div class="fc-progress-week">
+                            <div class="fc-progress-week-head" aria-hidden="true">
+                                <span>Day</span>
+                                <span>MMX hours</span>
+                                <span>LifeLenz</span>
+                            </div>
+                            <ol class="fc-progress-week-rows" id="fc-progress-week-rows"></ol>
+                        </div>
+                        <div class="fc-progress-detail-split">
+                            <section class="fc-progress-detail-pane">
+                                <h3 class="fc-progress-pane-title">Macromatix hours</h3>
+                                <div class="fc-progress-detail" id="fc-progress-mmx-detail"></div>
+                            </section>
+                            <section class="fc-progress-detail-pane">
+                                <h3 class="fc-progress-pane-title">LifeLenz day parts</h3>
+                                <div class="fc-progress-detail" id="fc-progress-lifelenz-detail"></div>
+                            </section>
+                        </div>
+                    </div>
+                </div>
+                <div id="fc-progress-done" class="fc-progress-stage" hidden>
+                    <h2 id="fc-progress-done-title">Forecast entered</h2>
+                    <p class="fc-progress-meta" id="fc-progress-done-meta"></p>
+                    <div class="fc-progress-done-results" id="fc-progress-done-results"></div>
+                </div>
+            </div>
+            <p class="fc-progress-error" id="fc-progress-error" role="alert"></p>
+            <div class="fc-progress-actions">
+                <button type="button" class="action" id="fc-progress-cancel" hidden>Cancel</button>
+                <button type="button" class="action" id="fc-progress-close" disabled>Submitting…</button>
+            </div>
+        </div>
+    </div>
+    <aside class="activity-tracker collapsed" id="activity-tracker" aria-live="polite" hidden aria-hidden="true">
+        <div class="activity-resize activity-resize-corner" data-resize="corner" title="Drag to resize" aria-hidden="true"></div>
+        <div class="activity-resize activity-resize-left" data-resize="left" title="Drag to resize width" aria-hidden="true"></div>
+        <div class="activity-resize activity-resize-top" data-resize="top" title="Drag to resize height" aria-hidden="true"></div>
+        <div class="activity-tracker-head" id="activity-tracker-head" title="Show activity">
+            <span class="activity-tracker-dot" aria-hidden="true"></span>
+            <span class="activity-tracker-title" id="activity-tracker-title">Activity</span>
+            <span class="activity-tracker-count" id="activity-tracker-count">0</span>
+            <button type="button" class="activity-tracker-toggle" id="activity-tracker-toggle" aria-expanded="false">Expand</button>
+        </div>
+        <div class="activity-tracker-body" id="activity-tracker-body">
+            <p class="activity-empty">No active updates.</p>
+        </div>
+    </aside>
+    <script src="/admin/forecast-progress.js?v=fc-progress-1"></script>
+    <script src="/admin/app.js?v=coach-nav-1"></script>
 </body>
 </html>

@@ -1,30 +1,33 @@
 @echo off
 setlocal EnableExtensions
-title Area Coach Tools — Installer
-REM Single entry point. Prefer local .ps1 (dev / after clone); otherwise download from GitHub.
+title Area Coach Tools
+REM Opens / builds the unified Area Coach Tools.exe (install + update + launch).
 
-set "PS1=%~dp0Install-AreaCoachTools.ps1"
-set "REPO_RAW=https://raw.githubusercontent.com/TiripsOrbro/area-coach-tools/main/Install-AreaCoachTools.ps1"
-set "ARGS=%*"
+set "ROOT=%~dp0"
+set "APP=%ROOT%Area Coach Tools.exe"
+set "DIST_APP=%ROOT%dist\Area Coach Tools.exe"
+set "BUILD_PS1=%ROOT%tools\Build-SetupExe.ps1"
 
-if not exist "%PS1%" (
-  echo Downloading installer script from GitHub...
-  powershell.exe -NoProfile -ExecutionPolicy Bypass -Command ^
-    "Invoke-WebRequest -UseBasicParsing -Uri '%REPO_RAW%' -OutFile '%TEMP%\Install-AreaCoachTools.ps1'"
-  if errorlevel 1 (
-    echo Failed to download installer from GitHub.
-    echo Ensure the repo is public or you are signed in, then retry.
-    pause
-    exit /b 1
-  )
-  set "PS1=%TEMP%\Install-AreaCoachTools.ps1"
+if exist "%APP%" goto :run
+if exist "%DIST_APP%" (
+  copy /Y "%DIST_APP%" "%APP%" >nul
+  goto :run
 )
 
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%PS1%" %ARGS%
-set "ERR=%ERRORLEVEL%"
-if not "%ERR%"=="0" (
-  echo.
-  echo Installer failed with exit code %ERR%.
+echo Building Area Coach Tools.exe...
+if not exist "%BUILD_PS1%" (
+  echo Missing tools\Build-SetupExe.ps1
+  echo Clone the repo or download Area Coach Tools.exe from GitHub.
   pause
+  exit /b 1
 )
-exit /b %ERR%
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%BUILD_PS1%" -OutDir "%ROOT%"
+if errorlevel 1 (
+  echo Failed to build Area Coach Tools.exe
+  pause
+  exit /b 1
+)
+
+:run
+start "" "%APP%"
+exit /b 0

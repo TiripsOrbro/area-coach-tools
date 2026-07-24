@@ -37,7 +37,8 @@ const GRID_WAIT_MS = Number(process.env.FORECAST_GRID_WAIT_MS) > 0
 const DATE_CHANGE_MS = 6000;
 const SAVE_SETTLE_MS = 8000;
 const SAVE_APPEAR_MS = 15000;
-const SAVE_APPEAR_FAST_MS = 400;
+/** After a bulk fill, Angular can take >400ms to enable Save — keep this generous. */
+const SAVE_APPEAR_FAST_MS = 5000;
 const SAVE_SUCCESS_TIMEOUT_MS = 15000;
 const SAVE_SUCCESS_PATTERN = /changes saved successfully/i;
 const OVERRIDE_CLOSE_MS = 2000;
@@ -126,7 +127,7 @@ async function waitForForecastSaveButtonHidden(page, timeoutMs = 3000) {
                     if (r.width <= 0 || r.height <= 0) continue;
                     const label = (el.textContent || el.value || '').replace(/\s+/g, ' ').trim();
                     const ngClick = el.getAttribute('ng-click') || '';
-                    if (/^save$/i.test(label) || /SaveChanges\s*\(/i.test(ngClick)) return false;
+                    if (/^save$/i.test(label) || /^save\b/i.test(label) || /SaveChanges\s*\(/i.test(ngClick)) return false;
                 }
                 return true;
             },
@@ -708,10 +709,14 @@ function commitTimeoutForValue(forecast, options = {}) {
 }
 
 async function dismissForecastOverrideEditor(page) {
-    await page.keyboard.press('Escape').catch(() => {});
+    // Do not press Escape — in Forecasting/Edit it can cancel pending manager overrides
+    // and clear the dirty flag so Save never appears.
     await page.evaluate(() => {
         const inp = document.querySelector('#overrideInput');
-        if (inp) inp.blur();
+        if (inp) {
+            inp.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', bubbles: true }));
+            inp.blur();
+        }
         const header = document.querySelector('#ForecastGridHeader, .mx-grid-header-container');
         header?.click();
     });
@@ -1132,12 +1137,13 @@ function cacheForecastCellValue(cellCache, slotOrLabel, wanted, hour = null) {
 }
 
 async function enterAndVerifyForecastSlot(page, slot, onProgress, options = {}) {
-    const { retry = false, cellCache = null } = options;
+    const { retry = false, cellCache = null, force = false } = options;
     const preRead =
         cellCache && getCellCacheValue(cellCache, slot) !== undefined
             ? getCellCacheValue(cellCache, slot)
             : await readManagerForecastCell(page, slot.label, slot.hour);
-    if (forecastValuesMatch(preRead, slot.forecast)) {
+    // `force` is required to mark Angular dirty even when the displayed value already matches.
+    if (!force && !retry && forecastValuesMatch(preRead, slot.forecast)) {
         const read = parseForecastDollar(preRead);
         emitSlotProgress(onProgress, {
             type: 'hour-confirmed',
@@ -1558,19 +1564,17 @@ async function verifyForecastDay(page, hourly, options = {}) {
 
         const liveRead = await readManagerForecastCell(page, slot.label, slot.hour);
         const cachedRead = getCellCacheValue(cellCache, slot);
-        const readText = liveRead != null && liveRead !== '' ? liveRead : cachedRead;
-        const readMatches = forecastValuesMatch(readText, slot.forecast);
-        const cacheMatches =
-            cachedRead !== undefined && forecastValuesMatch(cachedRead, slot.forecast);
-        if (readMatches || cacheMatches) {
+        // Prefer live DOM. Cache-only matches hid unsaved/reverted values after Escape.
+        const readText =
+            liveRead != null && String(liveRead).trim() !== '' ? liveRead : cachedRead;
+        if (forecastValuesMatch(readText, slot.forecast)) {
             confirmed += 1;
-            const matchedRead = readMatches ? readText : cachedRead;
             emitSlotProgress(onProgress, {
                 type: 'hour-confirmed',
                 hour: slot.hour,
                 label: slot.label,
                 forecast: slot.forecast,
-                read: parseForecastDollar(matchedRead),
+                read: parseForecastDollar(readText),
                 phase: 'day-check',
             });
             continue;
@@ -1594,16 +1598,22 @@ async function waitForForecastSaveButton(page, timeoutMs = 15000) {
     const handle = await page
         .waitForFunction(
             () => {
-                for (const el of document.querySelectorAll('button, a.btn, input[type="button"], input[type="submit"]')) {
+                for (const el of document.querySelectorAll('button, a.btn, input[type="button"], input[type="submit"], [ng-click]')) {
                     const r = el.getBoundingClientRect();
                     if (r.width <= 0 || r.height <= 0) continue;
                     const style = window.getComputedStyle(el);
                     if (style.visibility === 'hidden' || style.display === 'none') continue;
-                    const label = (el.textContent || el.value || el.getAttribute('aria-label') || '')
+                    if (el.disabled || el.getAttribute('disabled') != null) continue;
+                    const label = (el.textContent || el.value || el.getAttribute('aria-label') || el.title || '')
                         .replace(/\s+/g, ' ')
                         .trim();
                     const ngClick = el.getAttribute('ng-click') || '';
-                    if (/^save$/i.test(label) || /SaveChanges\s*\(/i.test(ngClick)) {
+                    if (
+                        /^save$/i.test(label) ||
+                        /^save\b/i.test(label) ||
+                        /SaveChanges\s*\(/i.test(ngClick) ||
+                        /saveChanges\s*\(/i.test(ngClick)
+                    ) {
                         return {
                             tag: el.tagName,
                             id: el.id || null,
@@ -1622,16 +1632,119 @@ async function waitForForecastSaveButton(page, timeoutMs = 15000) {
     return handle.jsonValue();
 }
 
+async function listVisibleForecastActionButtons(page) {
+    return page.evaluate(() => {
+        const out = [];
+        for (const el of document.querySelectorAll('button, a.btn, input[type="button"], input[type="submit"], a')) {
+            const label = (el.textContent || el.value || el.getAttribute('aria-label') || el.title || '')
+                .replace(/\s+/g, ' ')
+                .trim()
+                .slice(0, 80);
+            const ngClick = el.getAttribute('ng-click') || '';
+            if (!label && !ngClick) continue;
+            const r = el.getBoundingClientRect();
+            const style = window.getComputedStyle(el);
+            out.push({
+                label,
+                ngClick: ngClick.slice(0, 80),
+                disabled: Boolean(el.disabled || el.getAttribute('disabled') != null),
+                visible: r.width > 0 && r.height > 0 && style.visibility !== 'hidden' && style.display !== 'none',
+            });
+        }
+        return out.slice(0, 40);
+    });
+}
+
+async function forceForecastFormDirty(page, hourly) {
+    const slots = normalizeHourlySlots(hourly).filter((slot) => !slot.outsideHours);
+    const slot = slots.find((row) => Math.round(Number(row.forecast) || 0) > 0) || slots[0];
+    if (!slot) return false;
+    // Bulk DOM writes update cell text without Angular dirty. Re-type with real Puppeteer
+    // clicks (force:true) so Save appears — even when the displayed value already matches.
+    const wanted = Math.round(Number(slot.forecast) || 0);
+    const nudge = {
+        ...slot,
+        forecast: wanted === 0 ? 1 : wanted + 1,
+    };
+    await enterAndVerifyForecastSlot(page, nudge, null, {
+        force: true,
+        suppressFailureProgress: true,
+    });
+    const result = await enterAndVerifyForecastSlot(page, slot, null, {
+        force: true,
+        suppressFailureProgress: true,
+    });
+    await dismissForecastOverrideEditor(page).catch(() => {});
+    return Boolean(result?.ok);
+}
+
+async function clickForecastSaveViaNgClick(page) {
+    return page.evaluate(() => {
+        const nodes = [
+            ...document.querySelectorAll('[ng-click*="SaveChanges"], [ng-click*="saveChanges"], [ng-click*="save("]'),
+        ];
+        for (const el of nodes) {
+            const r = el.getBoundingClientRect();
+            const style = window.getComputedStyle(el);
+            if (r.width <= 0 || r.height <= 0) continue;
+            if (style.visibility === 'hidden' || style.display === 'none') continue;
+            if (el.disabled || el.getAttribute('disabled') != null) continue;
+            el.click();
+            return el.getAttribute('ng-click') || 'SaveChanges';
+        }
+        return null;
+    });
+}
+
 async function commitForecastDaySave(page, options = {}) {
     const fast = options.fast !== false;
-    const savedAs = await clickForecastSave(page, {
+    const hourly = options.hourly || [];
+
+    let savedAs = await clickForecastSave(page, {
         timeoutMs: fast ? SAVE_APPEAR_FAST_MS : SAVE_APPEAR_MS,
         saveSuccessTimeoutMs: SAVE_SUCCESS_TIMEOUT_MS,
     });
-    return savedAs || 'unchanged';
+    if (savedAs) return savedAs;
+
+    savedAs = await clickForecastSaveViaNgClick(page);
+    if (savedAs) {
+        await waitForForecastSaveCompleted(page, SAVE_SUCCESS_TIMEOUT_MS);
+        await waitForForecastGrid(page);
+        return savedAs;
+    }
+
+    // Bulk fill can update cell text without Angular dirty → Save stays hidden.
+    if (hourly.length) {
+        await forceForecastFormDirty(page, hourly);
+    }
+
+    savedAs = await clickForecastSave(page, {
+        timeoutMs: SAVE_APPEAR_MS,
+        saveSuccessTimeoutMs: SAVE_SUCCESS_TIMEOUT_MS,
+    });
+    if (savedAs) return savedAs;
+
+    savedAs = await clickForecastSaveViaNgClick(page);
+    if (savedAs) {
+        await waitForForecastSaveCompleted(page, SAVE_SUCCESS_TIMEOUT_MS);
+        await waitForForecastGrid(page);
+        return savedAs;
+    }
+
+    const buttons = await listVisibleForecastActionButtons(page).catch(() => []);
+    const sample = buttons
+        .filter((b) => b.visible || /save/i.test(b.label) || /save/i.test(b.ngClick))
+        .slice(0, 12)
+        .map((b) => `${b.visible ? '' : '[hidden]'}${b.label || b.ngClick}${b.disabled ? '(disabled)' : ''}`)
+        .join(' | ');
+    throw new Error(
+        'Macromatix Save button did not appear after forecast edits. Values were entered but not saved.' +
+            (sample ? ` Visible actions: ${sample}` : '')
+    );
 }
 
 async function clickForecastSave(page, { timeoutMs = SAVE_APPEAR_MS, saveSuccessTimeoutMs = SAVE_SUCCESS_TIMEOUT_MS } = {}) {
+    await dismissForecastOverrideEditor(page).catch(() => {});
     const meta = await waitForForecastSaveButton(page, timeoutMs);
     if (!meta) return null;
 
@@ -1639,12 +1752,13 @@ async function clickForecastSave(page, { timeoutMs = SAVE_APPEAR_MS, saveSuccess
         for (const el of document.querySelectorAll('button, a.btn, input[type="button"], input[type="submit"]')) {
             const r = el.getBoundingClientRect();
             if (r.width <= 0 || r.height <= 0) continue;
-            const label = (el.textContent || el.value || el.getAttribute('aria-label') || '')
+            const label = (el.textContent || el.value || el.getAttribute('aria-label') || el.title || '')
                 .replace(/\s+/g, ' ')
                 .trim();
             const ngClick = el.getAttribute('ng-click') || '';
-            if (!/^save$/i.test(label) && !/SaveChanges\s*\(/i.test(ngClick)) continue;
+            if (!/^save$/i.test(label) && !/^save\b/i.test(label) && !/SaveChanges\s*\(/i.test(ngClick)) continue;
             if (want.id && el.id !== want.id) continue;
+            if (el.disabled || el.getAttribute('disabled') != null) continue;
             el.click();
             return label || ngClick || 'Save';
         }
@@ -1910,7 +2024,7 @@ async function writeForecastPlanToSpa(page, storeNumber, plan, options = {}) {
         emit({ type: 'day-saving', date: day.date, fill: fillResult, verify: verifyResult });
 
         const savedAs = fillResult.changed
-            ? await commitForecastDaySave(page, { fast: true })
+            ? await commitForecastDaySave(page, { fast: true, hourly: verifySlots })
             : 'unchanged';
 
         const dayResult = {
@@ -2046,9 +2160,11 @@ async function backfillStoreHistoryFromMmx(storeNumber, options = {}) {
 
     let browser;
     let imported = 0;
+    let skippedEmpty = 0;
     const days = [];
     try {
-        pushLog(`Starting MMX backfill for last ${daysBack} days (5 weeks)...`);
+        pushLog(`Store ${store}: starting MMX backfill for last ${daysBack} days (5 weeks).`);
+        pushLog(`Store ${store}: launching headless Chromium + logging into Macromatix as ${credentials.username}...`);
         const opened = await scraper.openMacromatixBrowser({
             storeNumber: store,
             mmxUsername: credentials.username,
@@ -2057,27 +2173,39 @@ async function backfillStoreHistoryFromMmx(storeNumber, options = {}) {
         });
         browser = opened.browser;
         const { page } = opened;
+        pushLog(`Store ${store}: opening labour scheduler page...`);
         await page.goto(LABOUR_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
+        pushLog(`Store ${store}: selecting store on labour page...`);
         await scraper.selectStoreOnPage(page, store, { waitMs: 900 });
+        pushLog(`Store ${store}: store ${store} selected.`);
 
         const today = melbourneToday();
         const missingDates = [];
         for (let offset = 1; offset <= daysBack; offset += 1) {
             missingDates.push(addDaysIso(today, -offset));
         }
-        pushLog(`Scraping ${missingDates.length} day(s) from labour scheduler...`);
+        const newest = missingDates[0];
+        const oldest = missingDates[missingDates.length - 1];
+        pushLog(
+            `Store ${store}: will scrape ${missingDates.length} calendar day(s) (${oldest} -> ${newest}, excluding today ${today}).`
+        );
         const scraped = await scraper.scrapeMissingHistoricalDays(page, missingDates, {
             timeZone: process.env.DASHBOARD_TIME_ZONE || 'Australia/Melbourne',
             onProgress: (ev) => {
                 if (ev?.message) pushLog(ev.message);
             },
         });
+        pushLog(`Store ${store}: scrape finished (${scraped.length} day response(s)). Saving history...`);
         for (const data of scraped) {
             const iso = data.dateIso;
             if (!iso) continue;
             const actualRaw = data.actual || [];
             const total = sumHourly(actualRaw);
-            if (total <= 0) continue;
+            if (total <= 0) {
+                skippedEmpty += 1;
+                continue;
+            }
+            const hoursWithSales = actualRaw.filter((v) => Number(v) > 0).length;
             upsertDay(store, iso, actualRaw, { source: 'mmx-backfill' });
             if (typeof recordForecastHistoryDay === 'function') {
                 try {
@@ -2092,27 +2220,36 @@ async function backfillStoreHistoryFromMmx(storeNumber, options = {}) {
                         },
                         { source: 'mmx-backfill', finalized: true, force: Boolean(options.force) }
                     );
-                } catch {
-                    /* ignore ledger write errors */
+                } catch (ledgerErr) {
+                    pushLog(
+                        `Store ${store}: warning - ledger write failed for ${iso}: ${ledgerErr.message || ledgerErr}`
+                    );
                 }
             }
             days.push({ dateKey: iso, actual: actualRaw, total });
             imported += 1;
+            pushLog(
+                `Store ${store}: saved ${iso} ($${Math.round(total * 100) / 100}, ${hoursWithSales} active hour(s)).`
+            );
         }
-        pushLog(`Imported ${imported} day(s) with sales into forecast history.`);
-        return { ok: true, storeNumber: store, imported, days, logs, daysBack };
+        pushLog(
+            `Store ${store}: done - imported ${imported} day(s) with sales, skipped ${skippedEmpty} empty/closed day(s).`
+        );
+        return { ok: true, storeNumber: store, imported, skippedEmpty, days, logs, daysBack };
     } catch (err) {
-        pushLog(`ERROR: ${err.message || String(err)}`);
+        pushLog(`Store ${store}: ERROR - ${err.message || String(err)}`);
         return {
             ok: false,
             storeNumber: store,
             imported,
+            skippedEmpty,
             days,
             logs,
             daysBack,
             error: err.message || String(err),
         };
     } finally {
+        pushLog(`Store ${store}: closing MMX browser...`);
         await scraper.closeBrowserQuietly(browser, 'forecast backfill');
     }
 }

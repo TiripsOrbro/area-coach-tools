@@ -72,12 +72,15 @@
     async function boot() {
       try {
         const data = await window.coachApi.listUsers();
-        usersEl.innerHTML = (data.users || []).map((u) => `
+        usersEl.innerHTML = (data.users || []).map((u) => {
+          const regionLabel =
+            u.region === 'ALL' ? 'All stores' : u.region ? `${u.region} stores` : '';
+          return `
           <button class="user" data-id="${u.id}">
             <div class="name">${u.displayName}</div>
-            <div class="meta">MMX ${u.mmxConfigured ? 'ready' : 'needs setup'} · LifeLenz ${u.lifelenzConfigured ? 'ready' : 'needs setup'}</div>
-          </button>
-        `).join('');
+            <div class="meta">${regionLabel}${regionLabel ? ' · ' : ''}MMX ${u.mmxConfigured ? 'ready' : 'needs setup'} · LifeLenz ${u.lifelenzConfigured ? 'ready' : 'needs setup'}</div>
+          </button>`;
+        }).join('');
         usersEl.querySelectorAll('button.user').forEach((btn) => {
           btn.addEventListener('click', async () => {
             status.textContent = `Signing in as ${btn.querySelector('.name').textContent}…`;

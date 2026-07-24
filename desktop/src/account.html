@@ -60,9 +60,26 @@
       <input id="lz-pass" type="password" autocomplete="current-password" />
     </div>
     <div class="card">
+      <h3>Gmail (send emails)</h3>
+      <p class="sub" style="margin-bottom:10px">Used to send Prep Guides, shortfalls, and build-to alerts. Use a Google <strong>App Password</strong> (not your normal Gmail password).</p>
+      <label>Gmail address</label>
+      <input id="gmail-email" type="email" autocomplete="email" placeholder="you@gmail.com" />
+      <label>App password</label>
+      <input id="gmail-pass" type="password" autocomplete="new-password" placeholder="16-character app password" />
+    </div>
+    <div class="card">
       <h3>Alert email (build-to warnings)</h3>
       <label>Email</label>
       <input id="alert-email" type="email" placeholder="you@example.com" />
+    </div>
+    <div class="card">
+      <h3>PC download folder</h3>
+      <p class="sub" style="margin-bottom:10px">Where Build-to workbooks are saved (e.g. <code>3901 - Build To.xlsx</code>). Leave blank for your Windows Downloads folder.</p>
+      <label>Folder path</label>
+      <div style="display:flex;gap:8px;align-items:stretch">
+        <input id="download-folder" type="text" placeholder="C:\Users\…\Downloads" style="flex:1" />
+        <button type="button" class="secondary" id="browse-download-folder" style="white-space:nowrap">Browse…</button>
+      </div>
     </div>
     <div class="card">
       <h3 id="stores-title">Stores in my region</h3>
@@ -92,15 +109,19 @@
       userId = active.userId;
       document.getElementById('title').textContent = `${active.displayName || userId} — account`;
       document.getElementById('subtitle').textContent =
-        `Region ${active.region || ''} · update portal logins, store access, and emails.`;
-      document.getElementById('stores-title').textContent = `Stores in ${active.region || 'region'}`;
+        `Region ${active.region === 'ALL' ? 'All stores' : active.region || ''} · update portal logins, store access, and emails.`;
+      document.getElementById('stores-title').textContent =
+        active.region === 'ALL' ? 'All stores' : `Stores in ${active.region || 'region'}`;
 
       const creds = await window.coachApi.getCredentials(userId);
       document.getElementById('mmx-user').value = creds.mmx?.username || '';
       document.getElementById('mmx-pass').value = creds.mmx?.password || '';
       document.getElementById('lz-email').value = creds.lifelenz?.email || '';
       document.getElementById('lz-pass').value = creds.lifelenz?.password || '';
+      document.getElementById('gmail-email').value = creds.gmail?.email || '';
+      document.getElementById('gmail-pass').value = creds.gmail?.password || '';
       document.getElementById('alert-email').value = creds.alertEmail || '';
+      document.getElementById('download-folder').value = creds.downloadFolder || '';
 
       const region = await window.coachApi.listRegionStores(userId);
       regionStores = region.stores || [];
@@ -112,7 +133,7 @@
         grid.innerHTML = regionStores.map((s) => `
           <label>
             <input type="checkbox" data-store="${s.storeNumber}" ${enabled.has(String(s.storeNumber)) || (!enabled.size && true) ? 'checked' : ''} />
-            <span>${s.storeNumber} ${s.storeName || ''}</span>
+            <span>${s.storeNumber} ${s.storeName || ''}${s.region && active?.region === 'ALL' ? ` (${s.region})` : ''}</span>
           </label>
         `).join('');
         // If profile had empty enabled, check all
@@ -150,7 +171,12 @@
             email: document.getElementById('lz-email').value.trim(),
             password: document.getElementById('lz-pass').value,
           },
+          gmail: {
+            email: document.getElementById('gmail-email').value.trim(),
+            password: document.getElementById('gmail-pass').value,
+          },
           alertEmail: document.getElementById('alert-email').value.trim(),
+          downloadFolder: document.getElementById('download-folder').value.trim(),
           enabledStores,
         });
         const map = {};
@@ -160,6 +186,17 @@
         await window.coachApi.setStoreEmails(map);
         msg.className = 'msg ok';
         msg.textContent = 'Saved.';
+      } catch (err) {
+        msg.className = 'msg bad';
+        msg.textContent = err.message || String(err);
+      }
+    });
+    document.getElementById('browse-download-folder').addEventListener('click', async () => {
+      try {
+        const picked = await window.coachApi.pickDownloadFolder();
+        if (picked?.success && picked.path) {
+          document.getElementById('download-folder').value = picked.path;
+        }
       } catch (err) {
         msg.className = 'msg bad';
         msg.textContent = err.message || String(err);

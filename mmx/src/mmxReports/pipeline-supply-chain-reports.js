@@ -1,4 +1,4 @@
-﻿const { GOTO_OPTS } = require('./mmx-browser');
+const { GOTO_OPTS } = require('./mmx-browser');
 const { withPageContextRetry } = require('./mmx-context-retry');
 const { setReportStartDate, setReportEndDate, waitForDateFieldSettle } = require('./mmx-rad-date-picker');
 const { resolveReportDate } = require('./util-dates');
@@ -384,6 +384,8 @@ function storeTreeHints(storeName, storeNumber) {
         'tba area',
         'collins food',
         'tba market',
+        'western australia',
+        'wa-1',
         'area 22',
         'area 21',
         'area 1',
@@ -397,6 +399,55 @@ function storeTreeHints(storeName, storeNumber) {
         .toLowerCase();
     if (name) hints.add(name);
     return [...hints];
+}
+
+/** Expand path for SCM Zone Filter — WA stores are not under TBA Market 1 / Area 22. */
+function scmTreeExpandPlan(storeNumber) {
+    const num = String(storeNumber || '').replace(/\D/g, '').trim();
+    const cfg = getStoreConfig(num) || {};
+    const area = String(cfg.area || '').trim();
+    const name = String(cfg.storeName || '')
+        .replace(/^\d+\s*/, '')
+        .trim()
+        .toLowerCase();
+    const isWa =
+        /^WA/i.test(area) ||
+        ['3901', '3902', '3903', '3904'].includes(num) ||
+        /midland|ellenbrook|canning|butler/i.test(name);
+
+    if (isWa) {
+        return {
+            region: 'wa',
+            marketNeedles: ['western australia', 'wa-1', 'wa 1', 'perth'],
+            areaLabel: area || 'WA-1',
+            areaNeedles: [area || 'WA-1', 'wa-1', name].filter(Boolean),
+        };
+    }
+
+    if (/^QLD/i.test(area) || /^37[56]\d{2}$/.test(num)) {
+        return {
+            region: 'qld',
+            marketNeedles: ['queensland', 'qld', 'tba market'],
+            areaLabel: /^Area\s*\d+/i.test(area) ? area : 'Area 1',
+            areaNeedles: [],
+        };
+    }
+
+    return {
+        region: 'vic',
+        marketNeedles: ['tba market 1'],
+        areaLabel: /^Area\s*\d+/i.test(area) ? area : 'Area 22',
+        areaNeedles: [],
+    };
+}
+
+function scmTreePostbackDefaults() {
+    // Desktop Area Coach Tools defaults — Pi can raise via env if needed.
+    return {
+        marketMs: Number(process.env.MMX_SCM_TREE_NODE_POSTBACK_MS || 2500),
+        areaMs: Number(process.env.MMX_SCM_TREE_AREA_POSTBACK_MS || 6000),
+        waitMs: Number(process.env.MMX_SCM_TREE_WAIT_MS || 25000),
+    };
 }
 
 /**
@@ -608,14 +659,21 @@ async function listScmStoreTreeLabels(page) {
 
 async function waitForScmStoreTreeAfterDates(page) {
     await page.waitForFunction(() => document.readyState === 'complete', { timeout: 8000 }).catch(() => {});
-    const treeMs = Number(process.env.MMX_SCM_TREE_AFTER_DATE_MS || 5000);
+    const already = await page.evaluate(() =>
+        Boolean(document.querySelector('.RadTreeView .rtMid, .RadTreeView .rtPlus, .RadTreeView'))
+    );
+    if (already) {
+        await page.waitForTimeout(Number(process.env.MMX_SCM_TREE_AFTER_DATE_PAD_MS || 150));
+        return;
+    }
+    const treeMs = Number(process.env.MMX_SCM_TREE_AFTER_DATE_MS || 3500);
     await page
         .waitForFunction(
             () => Boolean(document.querySelector('.RadTreeView .rtMid, .RadTreeView .rtPlus, .RadTreeView')),
             { timeout: treeMs, polling: 80 }
         )
         .catch(() => {});
-    await page.waitForTimeout(Number(process.env.MMX_SCM_TREE_AFTER_DATE_PAD_MS || 350));
+    await page.waitForTimeout(Number(process.env.MMX_SCM_TREE_AFTER_DATE_PAD_MS || 150));
 }
 
 function parseAreaNumber(areaLabel) {
@@ -882,35 +940,61 @@ async function scmAreaRowsVisible(page) {
 }
 
 /**
- * Zone Filter tree: expand Collins → TBA Market 1 → store's TBA Area N (from .storelist), then wait for the store row.
+ * Zone Filter tree: expand Collins → market/region → area, then wait for the store row.
+ * WA uses Western Australia (not VIC TBA Market 1 / Area 22).
  */
 async function expandScmPathToStore(page, storeNumber) {
     const num = String(storeNumber || '').replace(/\D/g, '').trim();
-    const cfg = getStoreConfig(num) || {};
-    const areaLabel = String(cfg.area || 'Area 22').trim();
-    const marketPostback = Number(process.env.MMX_SCM_TREE_NODE_POSTBACK_MS || 6000);
-    const areaPostback = Number(process.env.MMX_SCM_TREE_AREA_POSTBACK_MS || 18000);
+    if (await storeVisibleInTree(page, num)) return true;
 
-    await expandTreeNodeByNeedle(page, 'collins food group', { postbackMs: marketPostback });
-    await expandTreeNodeByNeedle(page, 'tba market 1', { postbackMs: marketPostback });
-    if (!(await scmAreaRowsVisible(page))) {
-        await expandTreeNodeByNeedle(page, 'tba market 1', { postbackMs: marketPostback, settleMs: 500 });
+    const plan = scmTreeExpandPlan(num);
+    const { marketMs, areaMs } = scmTreePostbackDefaults();
+
+    log.info(`SCM store tree: expand path ${plan.region} → ${plan.areaLabel}`);
+    await expandTreeNodeByNeedle(page, 'collins food group', { postbackMs: marketMs });
+    if (await storeVisibleInTree(page, num)) return true;
+
+    for (const needle of plan.marketNeedles) {
+        await expandTreeNodeByNeedle(page, needle, { postbackMs: marketMs });
+        if (await storeVisibleInTree(page, num)) return true;
+        if (plan.region !== 'wa' && (await scmAreaRowsVisible(page))) break;
     }
-    await expandTreeNodeByAreaLabel(page, areaLabel, { postbackMs: areaPostback });
-    if (await waitForStoreRowInTree(page, num, areaPostback)) {
+
+    if (plan.region === 'wa') {
+        for (const needle of plan.areaNeedles) {
+            await expandTreeNodeByNeedle(page, needle, { postbackMs: marketMs });
+            if (await waitForStoreRowInTree(page, num, Math.min(areaMs, 3000))) {
+                return storeVisibleInTree(page, num);
+            }
+        }
+        // Light sequential expand under WA — poll for store instead of 18s area postbacks.
+        for (let i = 0; i < 10; i++) {
+            if (await storeVisibleInTree(page, num)) return true;
+            const expanded = await expandOneSequentialCollapsedNode(page, plan.areaLabel);
+            if (!expanded) break;
+            log.info(`SCM store tree: expanding ${expanded.kind} node "${expanded.label}"`);
+            await waitForRadTreeIdle(page, 2000, 80);
+            if (await waitForStoreRowInTree(page, num, 2000)) {
+                return storeVisibleInTree(page, num);
+            }
+        }
         return storeVisibleInTree(page, num);
     }
-    await forceExpandTargetArea(page, areaLabel, num);
+
+    await expandTreeNodeByAreaLabel(page, plan.areaLabel, { postbackMs: areaMs });
+    if (await waitForStoreRowInTree(page, num, areaMs)) {
+        return storeVisibleInTree(page, num);
+    }
+    await forceExpandTargetArea(page, plan.areaLabel, num);
     if (await storeVisibleInTree(page, num)) {
         return true;
     }
-    await refreshAreaNodeIfStoreHidden(page, areaLabel, num);
+    await refreshAreaNodeIfStoreHidden(page, plan.areaLabel, num);
     if (await storeVisibleInTree(page, num)) {
         return true;
     }
-    // Area expand postback can lag on the Pi — one more expand pass before giving up.
-    await expandTreeNodeByAreaLabel(page, areaLabel, { postbackMs: areaPostback, settleMs: 500 });
-    await waitForStoreRowInTree(page, num, areaPostback);
+    await expandTreeNodeByAreaLabel(page, plan.areaLabel, { postbackMs: areaMs, settleMs: 300 });
+    await waitForStoreRowInTree(page, num, Math.min(areaMs, 4000));
     return storeVisibleInTree(page, num);
 }
 
@@ -973,9 +1057,12 @@ async function expandOneSequentialCollapsedNode(page, areaLabel) {
 
 async function waitUntilStoreVisibleInTree(page, storeNumber, timeoutMs) {
     const num = String(storeNumber || '').replace(/\D/g, '').trim();
-    const cfg = getStoreConfig(num) || {};
-    const areaLabel = String(cfg.area || 'Area 22').trim();
-    const postbackMs = Number(process.env.MMX_SCM_TREE_AREA_POSTBACK_MS || 20000);
+    if (await storeVisibleInTree(page, num)) {
+        log.info(`SCM store tree: store ${num} already visible`);
+        return true;
+    }
+
+    const plan = scmTreeExpandPlan(num);
 
     if (await expandScmPathToStore(page, num)) {
         log.info(`SCM store tree: store ${num} visible in tree`);
@@ -990,26 +1077,24 @@ async function waitUntilStoreVisibleInTree(page, storeNumber, timeoutMs) {
             return true;
         }
         if (Date.now() - lastLog >= 4000) {
-            log.info(`SCM store tree: waiting for store ${num} - re-expanding market/area…`);
+            log.info(`SCM store tree: waiting for store ${num} - expanding ${plan.region}…`);
             lastLog = Date.now();
         }
-        await forceExpandTargetArea(page, areaLabel, num);
-        if (await storeVisibleInTree(page, num)) continue;
 
-        await refreshAreaNodeIfStoreHidden(page, areaLabel, num);
-        if (await storeVisibleInTree(page, num)) continue;
-
-        await expandScmPathToStore(page, num);
-        if (await storeVisibleInTree(page, num)) continue;
-
-        const expanded = await expandOneSequentialCollapsedNode(page, areaLabel);
+        // Prefer light sequential expands over repeating the full VIC path.
+        const expanded = await expandOneSequentialCollapsedNode(page, plan.areaLabel);
         if (expanded) {
-            log.info(
-                `SCM store tree: expanding ${expanded.kind} node "${expanded.label}"`
-            );
-            await waitForAspPostback(page, { timeoutMs: postbackMs }).catch(() => {});
-            await page.waitForTimeout(500);
+            log.info(`SCM store tree: expanding ${expanded.kind} node "${expanded.label}"`);
+            await waitForRadTreeIdle(page, 2000, 80);
+            if (await waitForStoreRowInTree(page, num, 2000)) continue;
+        } else if (plan.region !== 'wa') {
+            await forceExpandTargetArea(page, plan.areaLabel, num);
+            if (await storeVisibleInTree(page, num)) continue;
+            await expandScmPathToStore(page, num);
+        } else {
+            await expandScmPathToStore(page, num);
         }
+        await page.waitForTimeout(200);
     }
     return storeVisibleInTree(page, num);
 }
@@ -1108,6 +1193,26 @@ async function selectScmStoreCheckboxInTree(page, storeNumber, storeName, option
         await waitForScmStoreTreeAfterDates(page);
     }
 
+    // Fast path: store row already on-screen — clear others and check, skip expand walks.
+    if (await storeVisibleInTree(page, num)) {
+        const treeHasChecked = await page.evaluate(
+            () =>
+                [...document.querySelectorAll('.RadTreeView input[type="checkbox"], input.rtChk')].some(
+                    (cb) => cb.checked
+                )
+        );
+        if (treeHasChecked) {
+            await clearScmTreeSelectedValuesLink(page);
+            await clearStoreCheckboxesInTree(page);
+        }
+        const pickedFast = await checkStoreCheckboxInTree(page, num);
+        if (pickedFast) {
+            log.info(`SCM store tree: checked "${pickedFast}" (already visible)`);
+            await page.waitForTimeout(Number(process.env.MMX_SCM_TREE_SELECT_SETTLE_MS || 150));
+            return;
+        }
+    }
+
     const treeHasChecked = await page.evaluate(
         () =>
             [...document.querySelectorAll('.RadTreeView input[type="checkbox"], input.rtChk')].some(
@@ -1118,19 +1223,24 @@ async function selectScmStoreCheckboxInTree(page, storeNumber, storeName, option
         log.info('SCM store tree: clearing prior store selections');
         await clearScmTreeSelectedValuesLink(page);
         await clearStoreCheckboxesInTree(page);
-        await page.waitForTimeout(Number(process.env.MMX_SCM_TREE_AFTER_CLEAR_MS || 200));
+        await page.waitForTimeout(Number(process.env.MMX_SCM_TREE_AFTER_CLEAR_MS || 150));
     }
 
-    const waitMs = Number(process.env.MMX_SCM_TREE_WAIT_MS || 60000);
+    const waitMs = scmTreePostbackDefaults().waitMs;
     const visible = await waitUntilStoreVisibleInTree(page, num, waitMs);
     if (!visible) {
         log.warn(`SCM store tree: store ${num} not visible after ${Math.round(waitMs / 1000)}s - trying checkbox anyway`);
     }
 
-    await clearStoreCheckboxesInTree(page);
-
     const picked = await checkStoreCheckboxInTree(page, num);
     if (!picked) {
+        await clearStoreCheckboxesInTree(page);
+        const retry = await checkStoreCheckboxInTree(page, num);
+        if (retry) {
+            log.info(`SCM store tree: checked "${retry}"`);
+            await page.waitForTimeout(Number(process.env.MMX_SCM_TREE_SELECT_SETTLE_MS || 150));
+            return;
+        }
         const snap = await listScmStoreTreeLabels(page);
         const sample = snap.labels
             .slice(0, 15)
@@ -1145,7 +1255,7 @@ async function selectScmStoreCheckboxInTree(page, storeNumber, storeName, option
         );
     }
     log.info(`SCM store tree: checked "${picked}"`);
-    await page.waitForTimeout(Number(process.env.MMX_SCM_TREE_SELECT_SETTLE_MS || 250));
+    await page.waitForTimeout(Number(process.env.MMX_SCM_TREE_SELECT_SETTLE_MS || 150));
 }
 
 /** SCM flat reports: store tree loads after dates - expand Area nodes until the store row appears. */
@@ -1654,10 +1764,25 @@ async function clearStoreTreeSelections(page) {
     await clearAllReportTreeCheckboxes(page);
 }
 
+/** SelectStore scopes login, but SCM Flat still needs the Zone Filter checkbox unless explicitly skipped. */
+function shouldSkipReportStoreTree(opts = {}) {
+    if (opts.skipTree === true) return true;
+    if (opts.skipTree === false) return false;
+    const env = process.env.MMX_SKIP_REPORT_STORE_TREE;
+    if (env !== undefined && String(env).trim() !== '') {
+        return !/^(0|false|no|off)$/i.test(String(env).trim());
+    }
+    // SCM flat reports with scmTreeStoreNumber must expand/check the store row.
+    if (opts.requireTree) return false;
+    // Default: do not skip — wrong Zone Filter state pastes another store into Build-to.
+    return false;
+}
+
 async function selectStore(page, storeName, opts = {}) {
     const storeNumber = String(opts.storeNumber || storeName.match(/\b(\d{4})\b/)?.[1] || '').trim();
     const treeHints = storeTreeHints(storeName, storeNumber);
     const needles = storeNeedles(storeName);
+    const skipTree = shouldSkipReportStoreTree(opts);
     await page
         .waitForFunction(() => document.readyState === 'complete', { timeout: 15000, polling: 100 })
         .catch(() => {});
@@ -1711,7 +1836,9 @@ async function selectStore(page, storeName, opts = {}) {
         }
     }
 
-    if (hasTree) {
+    if (hasTree && skipTree) {
+        log.info('Skipping report store tree expand (session already scoped via SelectStore)');
+    } else if (hasTree) {
         const treeTimeoutMs = Number(
             opts.treeReadyTimeoutMs || process.env.MMX_REPORT_TREE_READY_MS || 90000
         );
@@ -1757,12 +1884,20 @@ async function selectStore(page, storeName, opts = {}) {
 
     if (storeNumber) {
         const { resolveStoreOnCurrentPage, useSingleStoreLoginMode } = require('../macromatixScraper');
-        const implicit = await resolveStoreOnCurrentPage(page, storeNumber, { optional: true });
+        const implicit = await resolveStoreOnCurrentPage(page, storeNumber, {
+            optional: true,
+            skipTree: true,
+        });
         if (implicit) {
             log.info(`Store ${storeNumber} already in session (${implicit})`);
             return;
         }
-        if (useSingleStoreLoginMode()) {
+        if (skipTree) {
+            log.info(`Store ${storeNumber}: continuing without report store tree`);
+            return;
+        }
+        // Do not continue past a visible SCM tree without checking the store — that pastes the wrong store into Build-to.
+        if (useSingleStoreLoginMode() && !hasTree) {
             log.info(`Store ${storeNumber}: single-store login - continuing without report store picker`);
             return;
         }
@@ -1841,7 +1976,11 @@ async function configureAndGenerateReport(page, report, reportNav, hooks = {}) {
     await emit(`selecting ${report.reportName}…`);
     await selectReportInList(page, report.reportName);
 
-    const startDate = resolveReportDate(report.startDate || 'lastWeekMonday', dateOpts(report));
+    const defaultStart =
+        report.id === 'report1' || /on\s*hand/i.test(String(report.label || report.reportName || ''))
+            ? 'tomorrow'
+            : 'lastWeekMonday';
+    const startDate = resolveReportDate(report.startDate || defaultStart, dateOpts(report));
     const formatText = report.format || 'Excel Data Only';
     const hasEndDate = Boolean(report.endDate);
 
@@ -1862,6 +2001,11 @@ async function configureAndGenerateReport(page, report, reportNav, hooks = {}) {
         await emit(`keeping start date (${startDate})…`);
     }
 
+    const skipTree = shouldSkipReportStoreTree({
+        skipTree: report.skipStoreTree,
+        requireTree: Boolean(report.scmTreeStoreNumber),
+    });
+
     if (hasEndDate) {
         const endDate = resolveReportDate(report.endDate, dateOpts(report));
         if (!useChain || chain.lastEndDate !== endDate) {
@@ -1871,12 +2015,12 @@ async function configureAndGenerateReport(page, report, reportNav, hooks = {}) {
         } else {
             await emit(`keeping end date (${endDate})…`);
         }
-        await waitForScmStoreTreeAfterDates(page);
+        if (!skipTree) await waitForScmStoreTreeAfterDates(page);
     } else if (chain) {
         chain.lastEndDate = null;
     }
 
-    if (report.scmTreeStoreNumber) {
+    if (report.scmTreeStoreNumber && !skipTree) {
         if (!hasEndDate) {
             await waitForScmStoreTreeAfterDates(page);
         }
@@ -1885,10 +2029,15 @@ async function configureAndGenerateReport(page, report, reportNav, hooks = {}) {
         await selectScmStoreCheckboxInTree(page, report.scmTreeStoreNumber, report.storeName, {
             skipDateWait: true,
         });
+    } else if (report.scmTreeStoreNumber) {
+        log.info(
+            `SCM store tree: skipping expand/check for ${report.scmTreeStoreNumber} (session already scoped)`
+        );
     } else if (!report.skipStoreSelection && report.storeName) {
         await emit('selecting store…');
         await selectStore(page, report.storeName, {
             storeNumber: report.storeNumber,
+            skipTree: report.skipStoreTree,
         });
     }
 

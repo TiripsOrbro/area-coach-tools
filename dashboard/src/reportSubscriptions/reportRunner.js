@@ -8,7 +8,7 @@ const REPORTS_DIR = paths.vendors.reports;
 const { getStoreList } = require('../../../stores/src/storeList');
 const { recordForecastHistoryDay, sumHourly, addDaysToIso, assessHistoryReadiness, HISTORY_DAYS } = require('../forecast/forecastHistoryLedger');
 const { downloadReportsForStores } = require('../../../mmx/src/mmxReportDownloader');
-const { recordIseSnapshotFromFile, writeStoreIseHistory, assessIseCoverage, resolveCoverageEndDate, weeklySnapshotAnchorDates, resolveIseWeeksDateRange } = require('./iseHistoryLedger');
+const { recordIseSnapshotFromFile, writeStoreIseHistory, assessIseCoverage, resolveCoverageEndDate, weeklySnapshotAnchorDates, resolveIseWeeksDateRange, resolveWeeksNeeded } = require('./iseHistoryLedger');
 const { isoToMacromatixDate } = require('../../../mmx/src/mmxReports/util-dates');
 const { buildHistoricalHourlySalesCsv, assessHourlySalesCoverage, datesInRange } = require('./historicalHourlySalesCsv');
 const { buildIseTrimmedAverageCsv, buildCombinedIseTrimmedAverageCsv } = require('./iseTrimmedAverage');
@@ -245,8 +245,9 @@ async function ensureIseHistory(storeNumber, options = {}) {
     }
 
     const coverageEndDate = resolveCoverageEndDate(dateRange);
+    const weeksNeeded = resolveWeeksNeeded(dateRange);
     const anchorsToFetch = options.force
-        ? weeklySnapshotAnchorDates(coverageEndDate)
+        ? weeklySnapshotAnchorDates(coverageEndDate, weeksNeeded)
         : coverage.missingSnapshotDates || [];
     if (!anchorsToFetch.length) {
         return coverage;

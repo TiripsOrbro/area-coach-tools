@@ -10,7 +10,13 @@ function defaultSettings() {
     return {
         stores: {},
         lastRunByStore: {},
-        defaults: { enabled: false },
+        lastEmailByStore: {},
+        defaults: {
+            enabled: false,
+            buildToEnabled: false,
+            prepGuideEnabled: false,
+            ordersEnabled: false,
+        },
         timeZone: TIME_ZONE,
         updatedAt: null,
     };
@@ -27,6 +33,10 @@ function readSettingsDoc() {
             stores: raw.stores && typeof raw.stores === 'object' ? raw.stores : {},
             lastRunByStore:
                 raw.lastRunByStore && typeof raw.lastRunByStore === 'object' ? raw.lastRunByStore : {},
+            lastEmailByStore:
+                raw.lastEmailByStore && typeof raw.lastEmailByStore === 'object'
+                    ? raw.lastEmailByStore
+                    : {},
             defaults: { ...base.defaults, ...(raw.defaults || {}) },
         };
     } catch {
@@ -40,27 +50,71 @@ function writeSettingsDoc(doc) {
 }
 
 function isStoreEnabled(storeNumber) {
+    return getStoreJobFlags(storeNumber).stockEnabled;
+}
+
+function getStoreJobFlags(storeNumber) {
     const store = String(storeNumber || '').trim();
-    if (!store) return false;
+    const empty = {
+        stockEnabled: false,
+        buildToEnabled: false,
+        prepGuideEnabled: false,
+        ordersEnabled: false,
+    };
+    if (!store) return empty;
     const doc = readSettingsDoc();
-    const entry = doc.stores[store];
-    if (entry && typeof entry.enabled === 'boolean') return entry.enabled;
-    return Boolean(doc.defaults?.enabled);
+    const entry = doc.stores[store] && typeof doc.stores[store] === 'object' ? doc.stores[store] : {};
+    const stock =
+        typeof entry.enabled === 'boolean'
+            ? entry.enabled
+            : typeof entry.stockEnabled === 'boolean'
+              ? entry.stockEnabled
+              : Boolean(doc.defaults?.enabled);
+    return {
+        stockEnabled: stock,
+        buildToEnabled:
+            typeof entry.buildToEnabled === 'boolean'
+                ? entry.buildToEnabled
+                : Boolean(doc.defaults?.buildToEnabled),
+        prepGuideEnabled:
+            typeof entry.prepGuideEnabled === 'boolean'
+                ? entry.prepGuideEnabled
+                : Boolean(doc.defaults?.prepGuideEnabled),
+        ordersEnabled:
+            typeof entry.ordersEnabled === 'boolean'
+                ? entry.ordersEnabled
+                : Boolean(doc.defaults?.ordersEnabled),
+    };
 }
 
 function setStoreEnabled(storeNumber, enabled, updatedBy = null) {
+    return setStoreJobFlag(storeNumber, 'stockEnabled', enabled, updatedBy);
+}
+
+function setStoreJobFlag(storeNumber, flag, enabled, updatedBy = null) {
     const store = String(storeNumber || '').trim();
     if (!store) throw new Error('storeNumber is required.');
+    const key = String(flag || '').trim();
+    const allowed = new Set(['stockEnabled', 'buildToEnabled', 'prepGuideEnabled', 'ordersEnabled']);
+    if (!allowed.has(key) && key !== 'enabled') {
+        throw new Error(`Unknown daily job flag: ${key}`);
+    }
 
     const doc = readSettingsDoc();
-    doc.stores[store] = {
-        enabled: Boolean(enabled),
-        updatedAt: new Date().toISOString(),
-        updatedBy: updatedBy ? String(updatedBy).trim() : null,
-    };
-    doc.updatedAt = doc.stores[store].updatedAt;
+    const prev = doc.stores[store] && typeof doc.stores[store] === 'object' ? doc.stores[store] : {};
+    const next = { ...prev };
+    if (key === 'stockEnabled' || key === 'enabled') {
+        next.enabled = Boolean(enabled);
+        next.stockEnabled = Boolean(enabled);
+    } else {
+        next[key] = Boolean(enabled);
+    }
+    next.updatedAt = new Date().toISOString();
+    next.updatedBy = updatedBy ? String(updatedBy).trim() : null;
+    doc.stores[store] = next;
+    doc.updatedAt = next.updatedAt;
     writeSettingsDoc(doc);
-    return doc.stores[store];
+    return getStoreJobFlags(store);
 }
 
 function listEnabledStores() {
@@ -119,23 +173,68 @@ function setLastRun(storeNumber, at) {
     writeSettingsDoc(doc);
 }
 
+function getLastEmailAt(storeNumber) {
+    const store = String(storeNumber || '').trim();
+    if (!store) return null;
+    const doc = readSettingsDoc();
+    const raw = doc.lastEmailByStore?.[store];
+    if (!raw) return null;
+    if (typeof raw === 'object' && raw.at) {
+        const date = new Date(raw.at);
+        return Number.isNaN(date.getTime()) ? null : date.toISOString();
+    }
+    const date = new Date(String(raw).trim());
+    return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+function setLastEmail(storeNumber, at = new Date(), meta = {}) {
+    const store = String(storeNumber || '').trim();
+    if (!store) return;
+    const doc = readSettingsDoc();
+    if (!doc.lastEmailByStore || typeof doc.lastEmailByStore !== 'object') {
+        doc.lastEmailByStore = {};
+    }
+    const iso =
+        at instanceof Date
+            ? at.toISOString()
+            : String(at || '').trim() || new Date().toISOString();
+    doc.lastEmailByStore[store] = {
+        at: iso,
+        to: meta.to ? String(meta.to) : null,
+        count: Number.isFinite(Number(meta.count)) ? Number(meta.count) : null,
+    };
+    writeSettingsDoc(doc);
+}
+
 function buildStatus(storeNumbers) {
     const doc = readSettingsDoc();
     const stores = {};
+    const jobs = {};
     const lastRun = {};
     const lastRunAt = {};
+    const lastEmailAt = {};
     for (const storeNumber of storeNumbers || []) {
         const store = String(storeNumber || '').trim();
         if (!store) continue;
-        stores[store] = isStoreEnabled(store);
+        const flags = getStoreJobFlags(store);
+        stores[store] = flags.stockEnabled;
+        jobs[store] = flags;
         lastRun[store] = getLastRun(store);
         lastRunAt[store] = getLastRunAt(store);
+        lastEmailAt[store] = getLastEmailAt(store);
     }
     return {
         stores,
+        jobs,
         lastRun,
         lastRunAt,
-        defaults: { enabled: Boolean(doc.defaults?.enabled) },
+        lastEmailAt,
+        defaults: {
+            enabled: Boolean(doc.defaults?.enabled),
+            buildToEnabled: Boolean(doc.defaults?.buildToEnabled),
+            prepGuideEnabled: Boolean(doc.defaults?.prepGuideEnabled),
+            ordersEnabled: Boolean(doc.defaults?.ordersEnabled),
+        },
         timeZone: doc.timeZone || TIME_ZONE,
     };
 }
@@ -144,9 +243,13 @@ module.exports = {
     SETTINGS_FILE,
     isStoreEnabled,
     setStoreEnabled,
+    getStoreJobFlags,
+    setStoreJobFlag,
     listEnabledStores,
     getLastRun,
     getLastRunAt,
     setLastRun,
+    getLastEmailAt,
+    setLastEmail,
     buildStatus,
 };

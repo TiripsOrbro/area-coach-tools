@@ -46,17 +46,7 @@ module.exports = {
     tacaudit: domain('tacaudit'),
     smg: domain('smg'),
     nsf: domain('nsf'),
+    // Built-in Build-to package shipped inside this app. Override only if needed.
     mmxReportAutomation:
-        process.env.MMX_REPORT_AUTOMATION_DIR ||
-        (fsExists(path.join('Y:', 'Taco Bell Dashboard', 'mmx-report-automation'))
-            ? path.join('Y:', 'Taco Bell Dashboard', 'mmx-report-automation')
-            : path.join(root, '..', 'mmx-report-automation')),
+        process.env.MMX_REPORT_AUTOMATION_DIR || path.join(root, 'mmx-report-automation'),
 };
-
-function fsExists(p) {
-    try {
-        return require('fs').existsSync(p);
-    } catch {
-        return false;
-    }
-}

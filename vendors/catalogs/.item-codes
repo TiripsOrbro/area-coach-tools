@@ -1,0 +1,15 @@
+# Macromatix item code cross-reference — copy to vendors/.item-codes
+# Format: Item Name | Canonical Code | Other Code
+#
+# Canonical = itemCode in vendors/.VendorName (Key Item Count)
+# Other     = ISE / on-hand / on-order / legacy codes (omit lines where Other = Canonical)
+
+MEAT BEEF COOKED | 39520 | 38500
+MEAT CHICKEN COOKED | 39867A | 39139
+CHICKEN CRISPY | 40303 | 40200
+CHIP NACHO CORN FREEZER | 38009 | 37887
+CHIP NACHO CORN FRIDGE | 39009 | 37887
+FLATBREAD | 37928 | 37895
+SAUCE CHOCOLATE DA VINCI | 38163 | 37883
+CINNAMON TWISTS | 40062A | 38352
+DRINK DARE ICED COFFEE DOUBLE | 7759 | 38239

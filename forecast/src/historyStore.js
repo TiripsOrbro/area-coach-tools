@@ -37,15 +37,55 @@ function writeHistory(storeNumber, doc) {
     return next;
 }
 
-/** Save one day's hourly actuals (array of numbers, typically 5am-based). */
+function sumActual(actual) {
+    return (Array.isArray(actual) ? actual : []).reduce((s, v) => s + (Number(v) || 0), 0);
+}
+
+/**
+ * Save one day's hourly actuals.
+ * Macromatix labour day-view arrays are 5AM-based (index 0 = 5:00 AM).
+ * Preserves ignored unless meta.ignored is explicitly provided.
+ */
 function upsertDay(storeNumber, dateKey, actual, meta = {}) {
     const doc = readHistory(storeNumber);
-    doc.days[String(dateKey)] = {
+    const key = String(dateKey);
+    const prev = doc.days[key] && typeof doc.days[key] === 'object' ? doc.days[key] : {};
+    const next = {
         actual: Array.isArray(actual) ? actual.map((n) => Number(n) || 0) : [],
-        source: meta.source || 'manual',
+        source: meta.source || prev.source || 'manual',
         capturedAt: new Date().toISOString(),
+        ignored: Object.prototype.hasOwnProperty.call(meta, 'ignored')
+            ? Boolean(meta.ignored)
+            : Boolean(prev.ignored),
+    };
+    if (prev.note && meta.note == null) next.note = prev.note;
+    if (meta.note != null) next.note = String(meta.note || '');
+    doc.days[key] = next;
+    return writeHistory(storeNumber, doc);
+}
+
+function setDayIgnored(storeNumber, dateKey, ignored) {
+    const doc = readHistory(storeNumber);
+    const key = String(dateKey);
+    if (!doc.days[key]) {
+        throw new Error(`No history day ${key} for store ${storeNumber}`);
+    }
+    doc.days[key] = {
+        ...doc.days[key],
+        ignored: Boolean(ignored),
+        capturedAt: doc.days[key].capturedAt || new Date().toISOString(),
     };
     return writeHistory(storeNumber, doc);
+}
+
+function deleteDay(storeNumber, dateKey) {
+    const doc = readHistory(storeNumber);
+    const key = String(dateKey);
+    if (!doc.days[key]) {
+        return { ok: false, missing: true, doc };
+    }
+    delete doc.days[key];
+    return { ok: true, doc: writeHistory(storeNumber, doc) };
 }
 
 function listDayKeys(storeNumber) {
@@ -58,11 +98,56 @@ function recentDays(storeNumber, count = 35) {
     return keys.map((dateKey) => ({ dateKey, ...doc.days[dateKey] }));
 }
 
+/** Newest-first list for the history editor UI. */
+function listHistoryDays(storeNumber, options = {}) {
+    const limit = Math.max(1, Number(options.limit || 70) || 70);
+    const doc = readHistory(storeNumber);
+    const keys = Object.keys(doc.days || {})
+        .sort()
+        .reverse()
+        .slice(0, limit);
+    return keys.map((dateKey) => {
+        const day = doc.days[dateKey] || {};
+        const actual = Array.isArray(day.actual) ? day.actual.map((n) => Number(n) || 0) : [];
+        return {
+            dateKey,
+            actual,
+            total: Math.round(sumActual(actual) * 100) / 100,
+            ignored: Boolean(day.ignored),
+            source: day.source || null,
+            note: day.note || '',
+            capturedAt: day.capturedAt || null,
+        };
+    });
+}
+
+function getHistoryDay(storeNumber, dateKey) {
+    const doc = readHistory(storeNumber);
+    const key = String(dateKey);
+    const day = doc.days[key];
+    if (!day) return null;
+    const actual = Array.isArray(day.actual) ? day.actual.map((n) => Number(n) || 0) : [];
+    return {
+        dateKey: key,
+        actual,
+        total: Math.round(sumActual(actual) * 100) / 100,
+        ignored: Boolean(day.ignored),
+        source: day.source || null,
+        note: day.note || '',
+        capturedAt: day.capturedAt || null,
+    };
+}
+
 module.exports = {
     HISTORY_DIR,
     readHistory,
     writeHistory,
     upsertDay,
+    setDayIgnored,
+    deleteDay,
     listDayKeys,
     recentDays,
+    listHistoryDays,
+    getHistoryDay,
+    sumActual,
 };

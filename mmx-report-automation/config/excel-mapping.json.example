@@ -1,0 +1,25 @@
+{
+  "mappings": [
+    {
+      "fromReport": "report1",
+      "fromSheet": "Sheet1",
+      "fromRange": "auto",
+      "toSheet": "STOCK ON HAND",
+      "toStartCell": "A1",
+      "clearBeforePaste": true,
+      "clearRange": "A1:Z500",
+      "mode": "values"
+    },
+    {
+      "fromReport": "report2",
+      "fromSheet": "Sheet1",
+      "fromRange": "auto",
+      "toSheet": "STOCK ON ORDER",
+      "toStartCell": "A1",
+      "clearBeforePaste": true,
+      "clearRange": "A1:Z500",
+      "mode": "values"
+    }
+  ],
+  "extractForMacromatix": []
+}

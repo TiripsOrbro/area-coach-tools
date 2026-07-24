@@ -1,0 +1,50 @@
+{
+  "reportNavigation": {
+    "url": "https://tacobellau.macromatix.net/MMS_System_Reports.aspx?MenuCustomItemID=12",
+    "group": "Supply Chain",
+    "waitAfterNavigateMs": 2500
+  },
+  "reports": [
+    {
+      "id": "report1",
+      "label": "Stock On Hand",
+      "type": "supplyChain",
+      "group": "Supply Chain",
+      "reportName": "SCM - Items On Hand (Flat)",
+      "format": "Excel Data Only",
+      "downloadExt": ".xls",
+      "downloadWaitMs": 300000,
+      "startDate": "tomorrow",
+      "timeZone": "Australia/Melbourne",
+      "generateButtonText": "Generate"
+    },
+    {
+      "id": "report2",
+      "label": "Stock On Order",
+      "type": "supplyChain",
+      "group": "Supply Chain",
+      "reportName": "SCM - Items On Order (Flat)",
+      "format": "Excel Data Only",
+      "downloadExt": ".xls",
+      "downloadWaitMs": 300000,
+      "startDate": "daysAgo:7",
+      "endDate": "daysFromNow:14",
+      "dateOnly": true,
+      "timeZone": "Australia/Melbourne",
+      "generateButtonText": "Generate"
+    },
+    {
+      "id": "report3",
+      "label": "Inventory Special Event",
+      "type": "storeReports",
+      "group": "Store Reports",
+      "reportName": "Inventory Special Event",
+      "format": "CSV",
+      "startDate": "yesterday",
+      "dateOnly": true,
+      "downloadExt": ".csv",
+      "downloadWaitMs": 300000,
+      "generateButtonText": "Generate"
+    }
+  ]
+}
