@@ -1440,21 +1440,48 @@ async function fillForecastHourlyInputs(page, hourly, options = {}) {
 
         await dismissForecastOverrideEditor(page).catch(() => {});
 
-        const toBulkRows = (batch) =>
-            batch.map((slot) => ({ label: slot.label, forecast: slot.forecast, hour: slot.hour }));
-
         const tradingPending = pending.filter((slot) => !slot.outsideHours);
         const outsidePending = pending.filter((slot) => slot.outsideHours);
         const bulkFailed = [];
 
+        // Trading hours must use real Puppeteer clicks. Bulk DOM writes update the visible
+        // cell text without updating Angular's model, so Save persists the old forecast.
         if (tradingPending.length) {
             await scrollForecastGridToTop(page);
-            const tradingBulk = await fillForecastSlotsBulkInPage(page, toBulkRows(tradingPending));
-            bulkFailed.push(...tradingBulk.failed);
+            for (const slot of tradingPending) {
+                emitSlotProgress(onProgress, {
+                    type: 'hour-entering',
+                    hour: slot.hour,
+                    label: slot.label,
+                    forecast: slot.forecast,
+                    outsideHours: false,
+                });
+                const result = await enterAndVerifyForecastSlot(page, slot, onProgress, {
+                    cellCache,
+                    continuous: true,
+                    force: true,
+                    suppressFailureProgress: true,
+                });
+                if (!result?.ok) {
+                    bulkFailed.push({
+                        label: slot.label,
+                        hour: slot.hour,
+                        reason: result?.reason || 'puppeteer-mismatch',
+                    });
+                }
+            }
+            await dismissForecastOverrideEditor(page).catch(() => {});
         }
         if (outsidePending.length) {
             await dismissForecastOverrideEditor(page).catch(() => {});
-            const outsideBulk = await fillForecastSlotsBulkInPage(page, toBulkRows(outsidePending));
+            const outsideBulk = await fillForecastSlotsBulkInPage(
+                page,
+                outsidePending.map((slot) => ({
+                    label: slot.label,
+                    forecast: slot.forecast,
+                    hour: slot.hour,
+                }))
+            );
             bulkFailed.push(...outsideBulk.failed);
         }
 
@@ -1463,8 +1490,20 @@ async function fillForecastHourlyInputs(page, hourly, options = {}) {
         const stillPending = pending.filter((slot) => !slotCacheMatches(cellCache, slot));
         if (stillPending.length) {
             await dismissForecastOverrideEditor(page).catch(() => {});
-            const retryBulk = await fillForecastSlotsBulkInPage(page, toBulkRows(stillPending));
-            bulkFailed.push(...retryBulk.failed);
+            for (const slot of stillPending) {
+                const result = await enterAndVerifyForecastSlot(page, slot, onProgress, {
+                    cellCache,
+                    force: true,
+                    suppressFailureProgress: true,
+                });
+                if (!result?.ok) {
+                    bulkFailed.push({
+                        label: slot.label,
+                        hour: slot.hour,
+                        reason: result?.reason || 'puppeteer-retry-mismatch',
+                    });
+                }
+            }
             Object.assign(cellCache, await readAllManagerForecastCells(page));
         }
 
@@ -1986,9 +2025,9 @@ async function writeForecastPlanToSpa(page, storeNumber, plan, options = {}) {
         }
 
         emit({ type: 'day-verifying', date: day.date });
+        // Live DOM only — never trust fill cache (bulk/synthetic writes can fake cell text).
         let verifyResult = await verifyForecastDay(page, verifySlots, {
             onProgress: slotProgress,
-            cellCache: fillResult?.cellCache,
         });
         if (!verifyResult.ok) {
             const tradingFailed = verifyResult.failed.filter((row) => !row.outsideHours);
@@ -2001,13 +2040,12 @@ async function writeForecastPlanToSpa(page, storeNumber, plan, options = {}) {
                         page,
                         aligned || slot,
                         slotProgress,
-                        fillResult?.cellCache || null
+                        null
                     );
                     if (fix.ok) verifyResult.confirmed += 1;
                 }
                 verifyResult = await verifyForecastDay(page, verifySlots, {
                     onProgress: slotProgress,
-                    cellCache: fillResult?.cellCache,
                 });
             }
         }
@@ -2027,12 +2065,31 @@ async function writeForecastPlanToSpa(page, storeNumber, plan, options = {}) {
             ? await commitForecastDaySave(page, { fast: true, hourly: verifySlots })
             : 'unchanged';
 
+        // Confirm values still match after Save (catch model not dirty / server revert).
+        let postSaveVerify = null;
+        if (fillResult.changed) {
+            await new Promise((resolve) => setTimeout(resolve, 400));
+            postSaveVerify = await verifyForecastDay(page, verifySlots, {
+                onProgress: slotProgress,
+            });
+            const tradingFailed = (postSaveVerify.failed || []).filter((row) => !row.outsideHours);
+            if (tradingFailed.length) {
+                const labels = tradingFailed.map((row) => row.label).join(', ');
+                throw new Error(
+                    `Forecast values did not persist after Save for ${day.date} ` +
+                        `(${postSaveVerify.confirmed}/${postSaveVerify.slotCount} still match). ` +
+                        `Reverted hours: ${labels || 'unknown'}.`
+                );
+            }
+        }
+
         const dayResult = {
             date: day.date,
             forecastTotal: day.forecastTotal,
             dateSet: dateResult,
             fill: fillResult,
             verify: verifyResult,
+            postSaveVerify,
             savedAs,
         };
         dayResults.push(dayResult);
