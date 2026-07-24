@@ -298,6 +298,57 @@ function Invoke-Git {
     return $code
 }
 
+function Get-LauncherExeRelativePaths {
+    return @(
+        $ExeName,
+        'Area Coach Tools.exe',
+        'AreaCoachTools-Setup.exe',
+        'AreaCoachTools.exe',
+        'AreaCoachToolsSetup.exe',
+        (Join-Path 'dist' $ExeName),
+        'dist\Area Coach Tools.exe'
+    ) | Where-Object { $_ } | Select-Object -Unique
+}
+
+function Move-AsideLauncherExes {
+    param([string]$Dir)
+
+    # Windows cannot unlink/overwrite a running .exe, but it can rename/move it.
+    # The bootstrap .exe is tracked in git, so updates must move it aside first.
+    foreach ($rel in (Get-LauncherExeRelativePaths)) {
+        $path = Join-Path $Dir $rel
+        if (-not (Test-Path -LiteralPath $path)) { continue }
+
+        $aside = "$path.selfupdate-old"
+        try {
+            if (Test-Path -LiteralPath $aside) {
+                Remove-Item -LiteralPath $aside -Force -ErrorAction SilentlyContinue
+            }
+            Move-Item -LiteralPath $path -Destination $aside -Force
+            Write-Host "Moved launcher aside for update: $rel"
+        }
+        catch {
+            Write-Host "Warning: could not move aside $rel ($($_.Exception.Message))"
+        }
+    }
+}
+
+function Remove-AsideLauncherExes {
+    param([string]$Dir)
+
+    foreach ($rel in (Get-LauncherExeRelativePaths)) {
+        $aside = "$(Join-Path $Dir $rel).selfupdate-old"
+        if (Test-Path -LiteralPath $aside) {
+            try {
+                Remove-Item -LiteralPath $aside -Force -ErrorAction Stop
+            }
+            catch {
+                # Still running from the renamed file; remove on a later launch.
+            }
+        }
+    }
+}
+
 function Invoke-GitCleanPreservingLocal {
     Invoke-Git -Quiet -FailMessage 'git clean failed' -Arguments @(
         'clean', '-fd',
@@ -312,7 +363,8 @@ function Invoke-GitCleanPreservingLocal {
         '-e', 'AreaCoachTools-Setup.exe',
         '-e', 'AreaCoachTools.exe',
         '-e', 'AreaCoachToolsSetup.exe',
-        '-e', 'Install-AreaCoachTools.ps1'
+        '-e', 'Install-AreaCoachTools.ps1',
+        '-e', '*.selfupdate-old'
     )
 }
 
@@ -353,6 +405,8 @@ function Update-FromGit {
 
             $local = (git rev-parse HEAD).Trim()
             $remote = (git rev-parse $remoteRef).Trim()
+            # Best-effort cleanup from a previous self-update.
+            Remove-AsideLauncherExes -Dir $Dir
             if ($local -eq $remote) {
                 $short = (git rev-parse --short HEAD).Trim()
                 Write-Host "Already up to date ($short on $branch)"
@@ -360,10 +414,12 @@ function Update-FromGit {
             }
             else {
                 Write-Host "Updating $($local.Substring(0, 7)) -> $($remote.Substring(0, 7)) ($branch)"
+                Move-AsideLauncherExes -Dir $Dir
                 # -f discards local edits so a dirty tree cannot block the Steam-style update.
                 Invoke-Git -Quiet -FailMessage 'git checkout failed' -Arguments @('checkout', '-f', '-B', $branch, $remoteRef)
                 Invoke-Git -Quiet -FailMessage 'git reset --hard failed' -Arguments @('reset', '--hard', $remoteRef)
                 Invoke-GitCleanPreservingLocal
+                Remove-AsideLauncherExes -Dir $Dir
                 $short = (git rev-parse --short HEAD).Trim()
                 Write-Host "Updated to $short ($branch)"
                 $didChange = $true
@@ -401,8 +457,10 @@ function Update-FromGit {
             $hasMain = ($LASTEXITCODE -eq 0)
             $ErrorActionPreference = 'Stop'
             if (-not $hasMain) { throw 'origin/main not found after fetch' }
+            Move-AsideLauncherExes -Dir $Dir
             Invoke-Git -Quiet -FailMessage 'git checkout main failed' -Arguments @('checkout', '-f', '-B', 'main', 'origin/main')
             Invoke-GitCleanPreservingLocal
+            Remove-AsideLauncherExes -Dir $Dir
             Write-Host "Checked out $(git rev-parse --short HEAD) (main)"
         }
         finally {
