@@ -30,7 +30,7 @@ const POLL_MS = 50;
 const VERIFY_POLL_MS = 50;
 const VERIFY_TIMEOUT_MS = Number(process.env.FORECAST_VERIFY_TIMEOUT_MS) > 0
     ? Number(process.env.FORECAST_VERIFY_TIMEOUT_MS)
-    : 2000;
+    : 6000;
 const GRID_WAIT_MS = Number(process.env.FORECAST_GRID_WAIT_MS) > 0
     ? Number(process.env.FORECAST_GRID_WAIT_MS)
     : 20000;
@@ -536,9 +536,7 @@ async function readAllManagerForecastCells(page) {
             const labelSpan = tr.querySelector('[id^="mx-forecast-grid-interval-directive-list-hour-"]');
             const rowLabel = (labelSpan?.textContent || '').replace(/\s+/g, ' ').trim();
             if (!rowLabel) continue;
-            const cell =
-                tr.querySelector('[id*="managerforecast"]') ||
-                tr.querySelector('td.mx-grid-column-input');
+            const cell = tr.querySelector('[id*="managerforecast"]');
             if (!cell) continue;
             out[rowLabel] = (cell.textContent || '').replace(/\s+/g, ' ').trim();
         }
@@ -681,19 +679,23 @@ async function waitForOverrideEditorClosed(page, timeoutMs = OVERRIDE_CLOSE_MS) 
     }
 }
 
-/** Poll until inline editor is gone and the manager-forecast cell shows the committed value. */
+/** Poll until the manager-forecast cell shows the committed value (editor open or closed). */
 async function waitForCellCommitted(page, wantLabel, wanted, timeoutMs = VERIFY_TIMEOUT_MS, wantHour = null) {
     const deadline = Date.now() + timeoutMs;
     while (Date.now() < deadline) {
-        const editorClosed = await page.evaluate(() => {
-            const inp = document.querySelector('#overrideInput');
-            if (!inp) return true;
+        const readText = await readManagerForecastCell(page, wantLabel, wantHour);
+        if (forecastValuesMatch(readText, wanted)) return true;
+        // Also accept the in-progress override input value.
+        const inputVal = await page.evaluate((sel) => {
+            const inp = document.querySelector(sel);
+            if (!inp) return null;
             const r = inp.getBoundingClientRect();
-            return r.width <= 0 || r.height <= 0;
-        });
-        if (editorClosed) {
-            const readText = await readManagerForecastCell(page, wantLabel, wantHour);
-            if (forecastValuesMatch(readText, wanted)) return true;
+            if (r.width <= 0 || r.height <= 0) return null;
+            return String(inp.value || '').trim();
+        }, MANAGER_OVERRIDE_INPUT);
+        if (inputVal != null && forecastValuesMatch(inputVal, wanted)) {
+            // Value is in the editor — commit with Enter and keep waiting for cell text.
+            await page.keyboard.press('Enter').catch(() => {});
         }
         await page.waitForTimeout(POLL_MS);
     }
@@ -822,10 +824,8 @@ async function readManagerForecastCell(page, wantLabel, wantHour = null) {
                 const labelMatch = rowLabel === wantNorm;
                 const hourMatch = hour != null && rowHour != null && rowHour === hour;
                 if (!labelMatch && !hourMatch) continue;
-                const cell =
-                    tr.querySelector('[id*="managerforecast"]') ||
-                    tr.querySelector('td.mx-grid-column-input');
-                if (!cell) return null;
+                const cell = tr.querySelector('[id*="managerforecast"]');
+                if (!cell) continue;
                 return norm(cell.textContent);
             }
             return null;
@@ -865,12 +865,42 @@ async function writeForecastOverrideValue(page, value, options = {}) {
         return false;
     }
 
+    // Prefer Angular ngModel write when available.
+    const angularWrote = await page.evaluate(
+        (sel, val) => {
+            const el = document.querySelector(sel);
+            if (!el) return false;
+            el.focus();
+            const ang = window.angular;
+            if (ang && typeof ang.element === 'function') {
+                try {
+                    const ne = ang.element(el);
+                    ne.val(val);
+                    ne.triggerHandler('input');
+                    ne.triggerHandler('change');
+                    return String(el.value || '') === String(val);
+                } catch {
+                    /* fall through */
+                }
+            }
+            return false;
+        },
+        MANAGER_OVERRIDE_INPUT,
+        text
+    );
+
     try {
         const handle = await page.$(MANAGER_OVERRIDE_INPUT);
         if (!handle) return false;
-        await handle.click({ clickCount: 3 });
-        await page.keyboard.press('Backspace').catch(() => {});
-        await page.keyboard.type(text, { delay: 5 });
+        if (!angularWrote) {
+            await handle.click({ clickCount: 1 });
+            await page.keyboard.down('Control');
+            await page.keyboard.press('KeyA');
+            await page.keyboard.up('Control');
+            await page.keyboard.press('Backspace').catch(() => {});
+            await page.keyboard.type(text, { delay: 20 });
+        }
+        await new Promise((r) => setTimeout(r, 60));
         await page.keyboard.press('Enter');
         return true;
     } catch {
@@ -1120,18 +1150,23 @@ async function fillForecastHourCell(page, wantLabel, forecast, options = {}) {
         return true;
     }
 
-    const committed = await waitForCellCommitted(
+    let committed = await waitForCellCommitted(
         page,
         wantLabel,
         wanted,
         commitTimeoutForValue(wanted, options),
         options.hour
     );
-    await dismissForecastOverrideEditor(page);
+    await dismissForecastOverrideEditor(page).catch(() => {});
+    if (!committed) {
+        // Editor may have blocked the read — re-check after close.
+        const after = await readManagerForecastCell(page, wantLabel, options.hour);
+        committed = forecastValuesMatch(after, wanted);
+    }
     if (committed && cellCache) {
         cacheForecastCellValue(cellCache, { label: wantLabel, hour: options.hour }, wanted);
     }
-    return committed ? true : false;
+    return Boolean(committed);
 }
 
 function cacheForecastCellValue(cellCache, slotOrLabel, wanted, hour = null) {
