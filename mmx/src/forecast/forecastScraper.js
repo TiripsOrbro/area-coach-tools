@@ -37,7 +37,8 @@ const GRID_WAIT_MS = Number(process.env.FORECAST_GRID_WAIT_MS) > 0
 const DATE_CHANGE_MS = 6000;
 const SAVE_SETTLE_MS = 8000;
 const SAVE_APPEAR_MS = 15000;
-const SAVE_APPEAR_FAST_MS = 400;
+/** After a bulk fill, Angular can take >400ms to enable Save — keep this generous. */
+const SAVE_APPEAR_FAST_MS = 5000;
 const SAVE_SUCCESS_TIMEOUT_MS = 15000;
 const SAVE_SUCCESS_PATTERN = /changes saved successfully/i;
 const OVERRIDE_CLOSE_MS = 2000;
@@ -126,7 +127,7 @@ async function waitForForecastSaveButtonHidden(page, timeoutMs = 3000) {
                     if (r.width <= 0 || r.height <= 0) continue;
                     const label = (el.textContent || el.value || '').replace(/\s+/g, ' ').trim();
                     const ngClick = el.getAttribute('ng-click') || '';
-                    if (/^save$/i.test(label) || /SaveChanges\s*\(/i.test(ngClick)) return false;
+                    if (/^save$/i.test(label) || /^save\b/i.test(label) || /SaveChanges\s*\(/i.test(ngClick)) return false;
                 }
                 return true;
             },
@@ -1603,7 +1604,7 @@ async function waitForForecastSaveButton(page, timeoutMs = 15000) {
                         .replace(/\s+/g, ' ')
                         .trim();
                     const ngClick = el.getAttribute('ng-click') || '';
-                    if (/^save$/i.test(label) || /SaveChanges\s*\(/i.test(ngClick)) {
+                    if (/^save$/i.test(label) || /^save\b/i.test(label) || /SaveChanges\s*\(/i.test(ngClick)) {
                         return {
                             tag: el.tagName,
                             id: el.id || null,
@@ -1628,10 +1629,24 @@ async function commitForecastDaySave(page, options = {}) {
         timeoutMs: fast ? SAVE_APPEAR_FAST_MS : SAVE_APPEAR_MS,
         saveSuccessTimeoutMs: SAVE_SUCCESS_TIMEOUT_MS,
     });
-    return savedAs || 'unchanged';
+    if (!savedAs) {
+        // One slower retry — Save often appears only after the override editor closes.
+        const retry = await clickForecastSave(page, {
+            timeoutMs: SAVE_APPEAR_MS,
+            saveSuccessTimeoutMs: SAVE_SUCCESS_TIMEOUT_MS,
+        });
+        if (!retry) {
+            throw new Error(
+                'Macromatix Save button did not appear after forecast edits. Values were entered but not saved.'
+            );
+        }
+        return retry;
+    }
+    return savedAs;
 }
 
 async function clickForecastSave(page, { timeoutMs = SAVE_APPEAR_MS, saveSuccessTimeoutMs = SAVE_SUCCESS_TIMEOUT_MS } = {}) {
+    await dismissForecastOverrideEditor(page).catch(() => {});
     const meta = await waitForForecastSaveButton(page, timeoutMs);
     if (!meta) return null;
 
@@ -1643,8 +1658,9 @@ async function clickForecastSave(page, { timeoutMs = SAVE_APPEAR_MS, saveSuccess
                 .replace(/\s+/g, ' ')
                 .trim();
             const ngClick = el.getAttribute('ng-click') || '';
-            if (!/^save$/i.test(label) && !/SaveChanges\s*\(/i.test(ngClick)) continue;
+            if (!/^save$/i.test(label) && !/^save\b/i.test(label) && !/SaveChanges\s*\(/i.test(ngClick)) continue;
             if (want.id && el.id !== want.id) continue;
+            if (el.disabled || el.getAttribute('disabled') != null) continue;
             el.click();
             return label || ngClick || 'Save';
         }
